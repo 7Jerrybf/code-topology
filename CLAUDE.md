@@ -119,7 +119,7 @@ interface TopologyGraph {
 
 ## 5. 開發階段路徑圖 (Implementation Phases)
 
-**目前階段：Phase 2 ✅ 完成 → Phase 3 待開始**
+**目前階段：Phase 3 ✅ 完成 → Phase 4 待開始**
 
 ### Phase 1: 骨架搭建與 AST 解析 (Week 1)
 
@@ -157,10 +157,23 @@ interface TopologyGraph {
 
 ### Phase 3: 差異比對與衝突模擬 (Week 3)
 
-* [ ] CLI 整合 `simple-git`。
-* [ ] 實作 AST Diff 邏輯：比對 `HEAD` 與 `main` 的 Export 簽名差異。
-* [ ] 更新 JSON 結構，加入 `status` 與 `isBroken` 欄位。
-* [ ] 前端實作視覺警示（紅色虛線、黃色節點）。
+* [x] CLI 整合 `simple-git`。 ✅ (2025-02-05)
+  - getGitDiff() 比對 HEAD 與 main/master
+  - 自動偵測 base branch
+  - `--base` 選項指定比對分支
+  - `--no-git` 選項跳過 git 分析
+* [x] 實作 AST Diff 邏輯：比對 `HEAD` 與 `main` 的 Export 簽名差異。 ✅ (2025-02-05)
+  - 提取 export 簽名 (function, class, type, interface, variable)
+  - 比對 export signature hash 偵測 breaking changes
+  - 追蹤 changedExportFiles 集合
+* [x] 更新 JSON 結構，加入 `status` 與 `isBroken` 欄位。 ✅ (2025-02-05)
+  - nodes.status: UNCHANGED/ADDED/MODIFIED/DELETED
+  - edges.isBroken: target exports 改變但 source 未更新
+* [x] 前端實作視覺警示（紅色虛線、黃色節點）。 ✅ (2025-02-05)
+  - MODIFIED 節點：黃色 ring
+  - ADDED 節點：綠色 ring
+  - DELETED 節點：紅色 ring + 透明度
+  - isBroken 邊：紅色虛線 + 動畫
 
 ### Phase 4: AI 洞察 (Week 4)
 
