@@ -123,14 +123,21 @@ interface TopologyGraph {
 
 ### Phase 1: 骨架搭建與 AST 解析 (Week 1)
 
-* [ ] 初始化 Monorepo 與 TS 設定。
-* [ ] 實作 CLI：可遍歷資料夾找出所有 `.ts` 檔案。
+* [x] 初始化 Monorepo 與 TS 設定。 ✅ (2025-02-05)
+  - pnpm workspace 設定完成
+  - TypeScript strict mode 啟用
+  - Git 初始化完成
+* [x] 實作 CLI 骨架：`topology analyze` 命令可用。 ✅ (2025-02-05)
+  - commander 整合完成
+  - glob 掃描 `.ts/.tsx` 檔案邏輯就緒
 * [ ] 整合 Tree-sitter：能解析檔案並提取 `import x from 'y'` 關係。
-* [ ] 輸出基礎 `graph.json`。
+* [ ] 輸出基礎 `topology-data.json`。
 
 ### Phase 2: 視覺化呈現 (Week 2)
 
-* [ ] 搭建 Next.js 環境。
+* [x] 搭建 Next.js 環境。 ✅ (2025-02-05)
+  - Next.js 15 + App Router
+  - React Flow、dagre、zustand 依賴已安裝
 * [ ] 整合 React Flow：讀取 `graph.json` 並顯示節點。
 * [ ] 整合 `dagre`：實現自動佈局，避免節點重疊。
 * [ ] 實作「點擊節點顯示源碼」的基礎 Sidebar。
