@@ -17,12 +17,17 @@ program
   .description('Analyze a directory and generate topology graph')
   .argument('[path]', 'Path to analyze', '.')
   .option('-o, --output <file>', 'Output JSON file path', './web/public/data/topology-data.json')
-  .action(async (path: string, options: { output: string }) => {
+  .option('-b, --base <branch>', 'Base branch to compare against (default: auto-detect main/master)')
+  .option('--no-git', 'Skip git diff analysis')
+  .action(async (path: string, options: { output: string; base?: string; git: boolean }) => {
     console.log(`\n🔍 Code Topology Analyzer\n`);
 
     try {
       // Analyze the directory
-      const graph = await analyzeDirectory(path);
+      const graph = await analyzeDirectory(path, {
+        baseBranch: options.base,
+        skipGitDiff: !options.git,
+      });
 
       // Ensure output directory exists
       const outputPath = resolve(options.output);
@@ -31,9 +36,28 @@ program
       // Write JSON output
       await writeFile(outputPath, JSON.stringify(graph, null, 2), 'utf-8');
 
+      // Calculate stats
+      const changedCount = graph.nodes.filter(n => n.status !== 'UNCHANGED').length;
+      const addedCount = graph.nodes.filter(n => n.status === 'ADDED').length;
+      const modifiedCount = graph.nodes.filter(n => n.status === 'MODIFIED').length;
+      const deletedCount = graph.nodes.filter(n => n.status === 'DELETED').length;
+      const brokenCount = graph.edges.filter(e => e.isBroken).length;
+
       console.log(`\n✅ Topology data written to: ${outputPath}`);
       console.log(`   - Nodes: ${graph.nodes.length}`);
       console.log(`   - Edges: ${graph.edges.length}`);
+
+      if (changedCount > 0) {
+        console.log(`\n📊 Changes detected:`);
+        if (addedCount > 0) console.log(`   - Added: ${addedCount}`);
+        if (modifiedCount > 0) console.log(`   - Modified: ${modifiedCount}`);
+        if (deletedCount > 0) console.log(`   - Deleted: ${deletedCount}`);
+      }
+
+      if (brokenCount > 0) {
+        console.log(`\n⚠️  Potentially broken dependencies: ${brokenCount}`);
+      }
+
       console.log(`\n💡 Start the web viewer with: pnpm dev:web\n`);
     } catch (error) {
       console.error('❌ Analysis failed:', error);

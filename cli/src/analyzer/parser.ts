@@ -29,6 +29,8 @@ export interface ParsedFile {
   imports: ParsedImport[];
   /** Hash of file content for change detection */
   contentHash: string;
+  /** Export signature for breaking change detection */
+  exportSignature: string;
 }
 
 // Initialize Tree-sitter parser
@@ -58,13 +60,20 @@ export async function parseFile(filePath: string, basePath: string): Promise<Par
     // Extract imports
     const imports = extractImports(tree.rootNode);
 
+    // Extract exports for signature
+    const exports = extractExports(tree.rootNode);
+
     // Generate simple content hash
     const contentHash = simpleHash(content);
+
+    // Generate export signature (sorted list of exports)
+    const exportSignature = simpleHash(exports.sort().join(','));
 
     return {
       filePath,
       imports,
       contentHash,
+      exportSignature,
     };
   } catch (error) {
     // Fail gracefully - log warning and skip file
@@ -189,6 +198,97 @@ function parseReExportStatement(node: Parser.SyntaxNode): ParsedImport | null {
     defaultImport: null,
     isRelative: source.startsWith('.') || source.startsWith('/'),
   };
+}
+
+/**
+ * Extract all exports from AST (function names, variable names, types, etc.)
+ */
+function extractExports(rootNode: Parser.SyntaxNode): string[] {
+  const exports: string[] = [];
+
+  for (const child of rootNode.children) {
+    if (child.type === 'export_statement') {
+      // Check for various export types
+      for (const exportChild of child.children) {
+        // export function name() {}
+        if (exportChild.type === 'function_declaration' || exportChild.type === 'function_signature') {
+          const nameNode = exportChild.childForFieldName('name');
+          if (nameNode) {
+            exports.push(`fn:${nameNode.text}`);
+          }
+        }
+        // export class Name {}
+        else if (exportChild.type === 'class_declaration') {
+          const nameNode = exportChild.childForFieldName('name');
+          if (nameNode) {
+            exports.push(`class:${nameNode.text}`);
+          }
+        }
+        // export const/let/var name = ...
+        else if (exportChild.type === 'lexical_declaration' || exportChild.type === 'variable_declaration') {
+          for (const decl of exportChild.children) {
+            if (decl.type === 'variable_declarator') {
+              const nameNode = decl.childForFieldName('name');
+              if (nameNode) {
+                exports.push(`var:${nameNode.text}`);
+              }
+            }
+          }
+        }
+        // export type Name = ...
+        else if (exportChild.type === 'type_alias_declaration') {
+          const nameNode = exportChild.childForFieldName('name');
+          if (nameNode) {
+            exports.push(`type:${nameNode.text}`);
+          }
+        }
+        // export interface Name {}
+        else if (exportChild.type === 'interface_declaration') {
+          const nameNode = exportChild.childForFieldName('name');
+          if (nameNode) {
+            exports.push(`interface:${nameNode.text}`);
+          }
+        }
+        // export { a, b, c }
+        else if (exportChild.type === 'export_clause') {
+          for (const specChild of exportChild.children) {
+            if (specChild.type === 'export_specifier') {
+              const nameNode = specChild.childForFieldName('name');
+              if (nameNode) {
+                exports.push(`named:${nameNode.text}`);
+              }
+            }
+          }
+        }
+        // export default
+        else if (exportChild.type === 'identifier') {
+          exports.push(`default:${exportChild.text}`);
+        }
+      }
+    }
+  }
+
+  return exports;
+}
+
+/**
+ * Parse content directly and extract export signature
+ * Used for comparing git versions
+ */
+export function parseContentForExports(content: string, isTsx: boolean = false): string {
+  try {
+    if (isTsx) {
+      parser.setLanguage(TypeScript.tsx);
+    } else {
+      parser.setLanguage(TypeScript.typescript);
+    }
+
+    const tree = parser.parse(content);
+    const exports = extractExports(tree.rootNode);
+    return simpleHash(exports.sort().join(','));
+  } catch {
+    return '';
+  }
 }
 
 /**
