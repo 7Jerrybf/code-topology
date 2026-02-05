@@ -119,7 +119,7 @@ interface TopologyGraph {
 
 ## 5. 開發階段路徑圖 (Implementation Phases)
 
-**目前階段：Phase 1**
+**目前階段：Phase 1 ✅ 完成 → Phase 2 進行中**
 
 ### Phase 1: 骨架搭建與 AST 解析 (Week 1)
 
@@ -130,8 +130,14 @@ interface TopologyGraph {
 * [x] 實作 CLI 骨架：`topology analyze` 命令可用。 ✅ (2025-02-05)
   - commander 整合完成
   - glob 掃描 `.ts/.tsx` 檔案邏輯就緒
-* [ ] 整合 Tree-sitter：能解析檔案並提取 `import x from 'y'` 關係。
-* [ ] 輸出基礎 `topology-data.json`。
+* [x] 整合 Tree-sitter：能解析檔案並提取 `import x from 'y'` 關係。 ✅ (2025-02-05)
+  - 支援 TypeScript 與 TSX 檔案
+  - 解析 import 語句與 re-export (export from)
+  - 處理 ESM `.js` 副檔名映射至 `.ts` 來源
+  - Windows/Unix 路徑正規化
+* [x] 輸出基礎 `topology-data.json`。 ✅ (2025-02-05)
+  - 輸出至 `web/public/data/topology-data.json`
+  - 測試結果：CLI codebase 產生 7 nodes, 7 edges
 
 ### Phase 2: 視覺化呈現 (Week 2)
 
