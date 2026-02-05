@@ -119,7 +119,7 @@ interface TopologyGraph {
 
 ## 5. 開發階段路徑圖 (Implementation Phases)
 
-**目前階段：Phase 1 ✅ 完成 → Phase 2 進行中**
+**目前階段：Phase 2 ✅ 完成 → Phase 3 待開始**
 
 ### Phase 1: 骨架搭建與 AST 解析 (Week 1)
 
@@ -144,9 +144,16 @@ interface TopologyGraph {
 * [x] 搭建 Next.js 環境。 ✅ (2025-02-05)
   - Next.js 15 + App Router
   - React Flow、dagre、zustand 依賴已安裝
-* [ ] 整合 React Flow：讀取 `graph.json` 並顯示節點。
-* [ ] 整合 `dagre`：實現自動佈局，避免節點重疊。
-* [ ] 實作「點擊節點顯示源碼」的基礎 Sidebar。
+* [x] 整合 React Flow：讀取 `topology-data.json` 並顯示節點。 ✅ (2025-02-05)
+  - TopologyGraph 組件讀取 JSON 資料
+  - TopologyNode 自訂節點樣式 (FILE/COMPONENT/UTILITY)
+  - 邊線顯示依賴關係與箭頭
+* [x] 整合 `dagre`：實現自動佈局，避免節點重疊。 ✅ (2025-02-05)
+  - 階層式 Top-Bottom 佈局
+  - 自動計算節點位置
+* [x] 實作「點擊節點顯示詳情」的 Sidebar。 ✅ (2025-02-05)
+  - 顯示 Type、Status、Hash
+  - 顯示 Imports 與 Imported by 清單
 
 ### Phase 3: 差異比對與衝突模擬 (Week 3)
 
