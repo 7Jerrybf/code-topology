@@ -3,4 +3,4 @@
  * Uses Tree-sitter to parse TypeScript files and extract import/export relationships
  */
 
-export { analyzeDirectory } from './scanner';
+export { analyzeDirectory } from './scanner.js';

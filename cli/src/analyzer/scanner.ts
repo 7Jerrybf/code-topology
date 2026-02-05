@@ -3,7 +3,7 @@
  */
 
 import { glob } from 'glob';
-import type { TopologyGraph } from '../types';
+import type { TopologyGraph } from '../types.js';
 
 /**
  * Analyze a directory and generate topology graph

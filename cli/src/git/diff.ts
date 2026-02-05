@@ -2,8 +2,8 @@
  * Git diff utilities - compare branches and detect file changes
  */
 
-import simpleGit from 'simple-git';
-import type { DiffStatus } from '../types';
+import { simpleGit } from 'simple-git';
+import type { DiffStatus } from '../types.js';
 
 /**
  * Get the diff status of files between current branch and main
