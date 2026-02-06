@@ -5,7 +5,7 @@ import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { FileCode, Component, Wrench } from 'lucide-react';
 import type { NodeType, DiffStatus } from '@/types/topology';
 
-export interface TopologyNodeData {
+export interface TopologyNodeData extends Record<string, unknown> {
   label: string;
   type: NodeType;
   status: DiffStatus;
