@@ -57,14 +57,19 @@ code-topology-mvp/
 │   ├── src/
 │   │   ├── analyzer/    # Tree-sitter 解析核心
 │   │   ├── git/         # Git 差異比對邏輯
+│   │   ├── reporter/    # Markdown/JSON 報告產生器 (Phase 6)
+│   │   ├── watcher/     # 檔案監聽與 WebSocket 伺服器 (Phase 6)
 │   │   └── index.ts     # CLI 入口點
 │   └── package.json
 ├── web/                 # 前端介面：負責讀取 JSON 並渲染圖形
 │   ├── src/
 │   │   ├── app/
 │   │   ├── components/  # React Flow 自定義節點
-│   │   └── hooks/
+│   │   ├── hooks/       # 包含 useWebSocketUpdates (Phase 6)
+│   │   └── stores/      # Zustand 狀態管理
 │   └── package.json
+├── .github/workflows/   # CI/CD 配置 (Phase 6)
+│   └── ci.yml           # 包含 topology-check job
 ├── output/              # 暫存區：CLI 生成的 graph.json 存放在此
 └── AGENT.md             # 本文件
 
@@ -126,7 +131,7 @@ interface TopologyGraph {
 
 ## 5. 開發階段路徑圖 (Implementation Phases)
 
-**目前階段：Phase 5 (UX Enhancement) ✅ 完成**
+**目前階段：Phase 6 (Developer Ecosystem) ✅ 完成**
 
 ### Phase 1: 骨架搭建與 AST 解析 (Week 1)
 
@@ -261,20 +266,26 @@ interface TopologyGraph {
 
 ### Phase 6: 開發者生態整合 (Developer Ecosystem)
 
-* [ ] **VS Code 擴充套件**
+* [x] **Watch 模式** ✅ (2026-02-07)
+  - CLI `topology watch` 命令：檔案變更自動重新掃描
+  - chokidar 監聽 `**/*.{ts,tsx,js,jsx,mjs,cjs,py}` 檔案
+  - WebSocket 伺服器 (預設 port 8765) 即時推送更新至前端
+  - 可設定選項：`--port`、`--debounce`、`--base`、`--no-git`
+  - 前端 LiveIndicator 元件顯示連線狀態
+  - TimelineSlider 顯示 LIVE 徽章
+  - 自動重連與指數退避機制
+
+* [x] **CI/CD 閘門整合** ✅ (2026-02-07)
+  - GitHub Action：PR 提交時自動分析
+  - CLI 新增選項：`--report markdown|json`、`--output-report`、`--fail-on-broken <n>`
+  - 偵測到 isBroken 邊線超過閾值時 exit 1
+  - 產生 Markdown 報告作為 PR Comment (peter-evans/create-or-update-comment)
+  - 報告包含：檔案統計、依賴統計、broken dependencies 清單
+
+* [ ] **VS Code 擴充套件** (延後至 Phase 6.5)
   - 側邊欄拓撲圖面板
   - 點擊節點跳轉至對應檔案
   - 儲存時自動重新分析
-
-* [ ] **CI/CD 閘門整合**
-  - GitHub Action：PR 提交時自動分析
-  - 偵測到 isBroken 邊線時阻止合併
-  - 產生 Markdown 報告作為 PR Comment
-
-* [ ] **Watch 模式**
-  - CLI `--watch` 選項：檔案變更自動重新掃描
-  - WebSocket 即時推送更新至前端
-  - 增量解析優化 (僅重新解析變更檔案)
 
 ### Phase 7: 進階 AI 協作 (Advanced AI Collaboration)
 
@@ -301,10 +312,12 @@ interface TopologyGraph {
 ### Phase 5 新增 ✅
 * `fuse.js` - 模糊搜尋 (已安裝)
 
-### Phase 6 新增
+### Phase 6 新增 ✅
+* `chokidar` - 檔案監聯 (已安裝)
+* `ws` + `@types/ws` - WebSocket 伺服器 (已安裝)
+
+### Phase 6.5 新增 (VS Code Extension)
 * `vscode-webview` - VS Code 插件
-* `chokidar` - 檔案監聯
-* `ws` - WebSocket 伺服器
 
 ### Phase 7 新增
 * `chromadb` 或 `@qdrant/js-client-rest` - 向量資料庫
@@ -315,12 +328,14 @@ interface TopologyGraph {
 
 ## 9. 成功指標 (Success Metrics)
 
-| 指標 | MVP 現況 | 目標值 |
+| 指標 | Phase 6 現況 | 目標值 |
 |------|----------|--------|
 | 解析延遲 | ~1s | < 500ms (增量) |
 | 節點支援數量 | 22 nodes | > 1000 nodes |
 | AI 分析延遲 | ~2s | < 3s |
-| 支援語言 | TypeScript/TSX | + JS/Python |
+| 支援語言 | TS/JS/Python ✅ | 達成 |
+| Watch 模式 | WebSocket 即時更新 ✅ | 達成 |
+| CI/CD 整合 | GitHub Action ✅ | 達成 |
 
 ---
 

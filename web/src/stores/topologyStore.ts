@@ -15,6 +15,9 @@ import type {
   Language,
 } from '@/types/topology';
 
+/** WebSocket connection status */
+export type WsConnectionStatus = 'disconnected' | 'connecting' | 'connected';
+
 interface TopologyStore {
   // Data
   snapshots: TopologySnapshot[];
@@ -36,6 +39,10 @@ interface TopologyStore {
   highlightedNodeIds: Set<string>;
   isSearchFocused: boolean;
 
+  // Live Updates state
+  liveUpdatesEnabled: boolean;
+  wsConnectionStatus: WsConnectionStatus;
+
   // Timeline Actions
   loadData: () => Promise<void>;
   setCurrentIndex: (index: number) => void;
@@ -52,6 +59,11 @@ interface TopologyStore {
   selectNode: (nodeId: string | null) => void;
   clearSearch: () => void;
   setSearchFocused: (focused: boolean) => void;
+
+  // Live Updates Actions
+  setLiveUpdatesEnabled: (enabled: boolean) => void;
+  setWsConnectionStatus: (status: WsConnectionStatus) => void;
+  addLiveSnapshot: (snapshot: TopologySnapshot) => void;
 
   // Computed search helpers
   getFilteredNodes: () => TopologyNode[];
@@ -159,6 +171,10 @@ export const useTopologyStore = create<TopologyStore>((set, get) => ({
   selectedNodeId: null,
   highlightedNodeIds: new Set<string>(),
   isSearchFocused: false,
+
+  // Live Updates initial state
+  liveUpdatesEnabled: false,
+  wsConnectionStatus: 'disconnected' as WsConnectionStatus,
 
   // Computed getters
   get currentSnapshot() {
@@ -302,6 +318,37 @@ export const useTopologyStore = create<TopologyStore>((set, get) => ({
 
   setSearchFocused: (focused: boolean) => {
     set({ isSearchFocused: focused });
+  },
+
+  // Live Updates Actions
+  setLiveUpdatesEnabled: (enabled: boolean) => {
+    set({ liveUpdatesEnabled: enabled });
+  },
+
+  setWsConnectionStatus: (status: WsConnectionStatus) => {
+    set({ wsConnectionStatus: status });
+  },
+
+  addLiveSnapshot: (snapshot: TopologySnapshot) => {
+    const { snapshots } = get();
+    const maxSnapshots = 50;
+
+    // Append the new snapshot
+    const newSnapshots = [...snapshots, snapshot];
+
+    // Trim to max snapshots (keep most recent)
+    if (newSnapshots.length > maxSnapshots) {
+      const excess = newSnapshots.length - maxSnapshots;
+      newSnapshots.splice(0, excess);
+    }
+
+    // Update state and move to latest
+    set({
+      snapshots: newSnapshots,
+      currentIndex: newSnapshots.length - 1,
+      isLoading: false,
+      error: null,
+    });
   },
 
   // Computed search helpers

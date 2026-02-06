@@ -10,6 +10,7 @@ import {
   Calendar,
   Tag,
   AlertTriangle,
+  Radio,
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -86,7 +87,12 @@ export function TimelineSlider() {
     goToPrevious,
     goToNext,
     goToLatest,
+    liveUpdatesEnabled,
+    wsConnectionStatus,
   } = useTopologyStore();
+
+  const isLiveConnected = liveUpdatesEnabled && wsConnectionStatus === 'connected';
+  const isAtLatest = currentIndex === snapshots.length - 1;
 
   const currentSnapshot = snapshots[currentIndex];
   const metadata = currentSnapshot?.metadata;
@@ -339,6 +345,18 @@ export function TimelineSlider() {
               <span className="text-sm text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
                 <Tag className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <span className="truncate max-w-24">{metadata.label}</span>
+              </span>
+            )}
+
+            {/* Live badge */}
+            {isLiveConnected && isAtLatest && (
+              <span className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75 animate-ping" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+                <Radio className="w-3 h-3" />
+                LIVE
               </span>
             )}
           </div>

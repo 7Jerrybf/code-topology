@@ -5,8 +5,10 @@ import { TopologyGraph } from '@/components/TopologyGraph';
 import { ExplainModal } from '@/components/ExplainModal';
 import { TimelineSlider } from '@/components/TimelineSlider';
 import { SearchPanel } from '@/components/SearchPanel';
+import { LiveIndicator } from '@/components/LiveIndicator';
 import { useTopologyStore } from '@/stores/topologyStore';
-import type { TopologyNode, TopologyEdge, TopologyGraph as TopologyGraphData } from '@/types/topology';
+import { useWebSocketUpdates } from '@/hooks/useWebSocketUpdates';
+import type { TopologyNode, TopologyEdge, TopologyGraph as TopologyGraphData, TopologySnapshot } from '@/types/topology';
 import type { ExplainResult, ExplainError } from '@/types/explain';
 import { FileCode, Component, Wrench, GitBranch, Clock, History } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -22,7 +24,26 @@ export default function Home() {
     highlightedNodeIds,
     selectedNodeId,
     selectNode,
+    liveUpdatesEnabled,
+    setWsConnectionStatus,
+    addLiveSnapshot,
   } = useTopologyStore();
+
+  // WebSocket live updates
+  const handleLiveSnapshot = useCallback((snapshot: TopologySnapshot) => {
+    addLiveSnapshot(snapshot);
+  }, [addLiveSnapshot]);
+
+  const { connectionStatus } = useWebSocketUpdates({
+    url: 'ws://localhost:8765',
+    enabled: liveUpdatesEnabled,
+    onSnapshot: handleLiveSnapshot,
+  });
+
+  // Sync connection status to store
+  useEffect(() => {
+    setWsConnectionStatus(connectionStatus);
+  }, [connectionStatus, setWsConnectionStatus]);
 
   // Get current graph from store
   const currentSnapshot = snapshots[currentIndex];
@@ -136,6 +157,7 @@ export default function Home() {
               </span>
             </div>
           )}
+          <LiveIndicator />
           <ThemeToggle />
         </div>
       </header>
