@@ -26,7 +26,10 @@
 
 * **CLI Framework**: `commander` or `cac`.
 * **Git Operations**: `simple-git` (用於讀取本地 git 狀態).
-* **AST Parsing**: `tree-sitter` & `tree-sitter-typescript` (高效增量解析).
+* **AST Parsing**: `tree-sitter` & language bindings (高效增量解析).
+  - `tree-sitter-typescript` (TypeScript/TSX)
+  - `tree-sitter-javascript` (JavaScript/JSX)
+  - `tree-sitter-python` (Python)
 * **File System**: `fs/promises`, `glob`.
 
 ### Frontend / Visualization (The "Face")
@@ -72,7 +75,7 @@ code-topology-mvp/
 1. **Trigger**: 使用者在終端機執行 `topology analyze`.
 2. **Process**:
 * CLI 掃描指定目錄。
-* Tree-sitter 解析 `.ts/.tsx` 檔案，提取 `Imports` (依賴) 與 `Exports` (定義)。
+* Tree-sitter 解析 `.ts/.tsx/.js/.jsx/.py` 檔案，提取 `Imports` (依賴) 與 `Exports` (定義)。
 * Simple-git 獲取當前分支與 `main` 的 Diff。
 
 
@@ -92,12 +95,16 @@ type NodeType = 'FILE' | 'COMPONENT' | 'UTILITY';
 // 變動狀態 (基於 Git Diff)
 type DiffStatus = 'UNCHANGED' | 'ADDED' | 'MODIFIED' | 'DELETED';
 
+// 支援的程式語言
+type Language = 'typescript' | 'javascript' | 'python';
+
 interface TopologyNode {
   id: string;          // 檔案路徑 (e.g., "src/utils/auth.ts")
   label: string;       // 顯示名稱 (e.g., "auth.ts")
   type: NodeType;
   status: DiffStatus;  // 用於前端著色 (綠/黃/紅)
   astSignature: string; // 用於比對內容變化的 Hash 或簽名
+  language?: Language; // 程式語言 (用於多語言專案)
 }
 
 interface TopologyEdge {
@@ -119,7 +126,7 @@ interface TopologyGraph {
 
 ## 5. 開發階段路徑圖 (Implementation Phases)
 
-**目前階段：Phase 4 ✅ 完成**
+**目前階段：Phase 5 (UX Enhancement) ✅ 完成**
 
 ### Phase 1: 骨架搭建與 AST 解析 (Week 1)
 
@@ -214,6 +221,106 @@ interface TopologyGraph {
 * 避免使用 `any`，除非是在處理 Tree-sitter 極端複雜的 AST 節點時可適度放寬，但必須加註解。
 
 
+---
+
+## 7. Post-MVP 開發路徑圖 (Post-MVP Roadmap)
+
+**核心願景**：從「代碼託管」到「智能編排」— 下一代 AI 協作作業系統
+
+### Phase 5: 使用者體驗強化 (UX Enhancement)
+
+* [x] **時間軸回溯 (Time Travel)** ✅ (2026-02-06)
+  - 新增 TopologyDataFile v2 格式支援多快照儲存
+  - CLI 新增 `--history`, `--max-snapshots`, `--snapshot-label` 選項
+  - Zustand store 管理快照狀態與導航
+  - TimelineSlider 元件：滑桿、導航按鈕、快照資訊顯示
+  - 鍵盤快捷鍵支援 (←/→/Home/End)
+  - 向後相容 v1 格式自動遷移
+
+* [x] **語義搜尋 (Semantic Search)** ✅ (2026-02-06)
+  - Fuse.js 模糊搜尋節點 (名稱/路徑)
+  - 類型過濾 (FILE/COMPONENT/UTILITY)
+  - 狀態過濾 (UNCHANGED/ADDED/MODIFIED/DELETED)
+  - 連結路徑高亮 (選中節點顯示完整依賴鏈)
+  - 非相關節點淡化效果
+  - 鍵盤快捷鍵：/ 搜尋、Esc 清除、Tab 導航、Enter 選擇
+
+* [x] **多語言支援** ✅ (2026-02-06)
+  - JavaScript (`.js/.jsx/.mjs/.cjs`) 解析 - tree-sitter-javascript
+  - Python (`.py`) 基礎支援 - tree-sitter-python
+  - 語言自動偵測 (根據副檔名)
+  - 節點顯示語言標籤 (TS/JS/PY)
+  - 搜尋面板支援語言過濾
+  - Python 解析：import/from 語句、__all__ 列表、函數/類別/變數導出
+
+* [x] **UI 優化** ✅ (2026-02-06)
+  - 深色模式 (Dark Mode) - next-themes 整合
+  - 主題切換按鈕 (系統/亮色/暗色)
+  - 所有元件支援 dark: 樣式變體
+  - React Flow 深色模式 (Background, Controls, MiniMap)
+
+### Phase 6: 開發者生態整合 (Developer Ecosystem)
+
+* [ ] **VS Code 擴充套件**
+  - 側邊欄拓撲圖面板
+  - 點擊節點跳轉至對應檔案
+  - 儲存時自動重新分析
+
+* [ ] **CI/CD 閘門整合**
+  - GitHub Action：PR 提交時自動分析
+  - 偵測到 isBroken 邊線時阻止合併
+  - 產生 Markdown 報告作為 PR Comment
+
+* [ ] **Watch 模式**
+  - CLI `--watch` 選項：檔案變更自動重新掃描
+  - WebSocket 即時推送更新至前端
+  - 增量解析優化 (僅重新解析變更檔案)
+
+### Phase 7: 進階 AI 協作 (Advanced AI Collaboration)
+
+* [ ] **向量引擎整合 (Vector Engine)**
+  - 引入 Vector DB (ChromaDB/Qdrant)
+  - 代碼區塊向量化嵌入
+  - 語義相關性軟連結 (虛線顯示)
+  - 自然語言搜尋：「哪裡處理付款邏輯？」
+
+* [ ] **多 Agent 協作 (Multi-Agent)**
+  - 影子分支 (Shadow Branching) 模擬
+  - 知識共享黑板 (Blackboard Pattern)
+  - 衝突偵測與 Arbiter Agent 仲裁
+
+* [ ] **配置規範視覺化**
+  - 依賴矩陣編輯器 (Dependency Matrix)
+  - 禁區劃分：拖拽設定「禁止跨層調用」
+  - 規範違反即時警告
+
+---
+
+## 8. 技術堆疊擴充計畫 (Tech Stack Expansion)
+
+### Phase 5 新增 ✅
+* `fuse.js` - 模糊搜尋 (已安裝)
+
+### Phase 6 新增
+* `vscode-webview` - VS Code 插件
+* `chokidar` - 檔案監聯
+* `ws` - WebSocket 伺服器
+
+### Phase 7 新增
+* `chromadb` 或 `@qdrant/js-client-rest` - 向量資料庫
+* `@xenova/transformers` 或 `openai` - 嵌入模型
+* `ai` (Vercel AI SDK) - 多模型整合
+
+---
+
+## 9. 成功指標 (Success Metrics)
+
+| 指標 | MVP 現況 | 目標值 |
+|------|----------|--------|
+| 解析延遲 | ~1s | < 500ms (增量) |
+| 節點支援數量 | 22 nodes | > 1000 nodes |
+| AI 分析延遲 | ~2s | < 3s |
+| 支援語言 | TypeScript/TSX | + JS/Python |
 
 ---
 

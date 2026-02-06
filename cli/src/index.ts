@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { writeFile, mkdir } from 'fs/promises';
+import { mkdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
-import { analyzeDirectory } from './analyzer/index.js';
+import { analyzeDirectory, saveTopologyData } from './analyzer/index.js';
 
 const program = new Command();
 
@@ -19,10 +19,22 @@ program
   .option('-o, --output <file>', 'Output JSON file path', './web/public/data/topology-data.json')
   .option('-b, --base <branch>', 'Base branch to compare against (default: auto-detect main/master)')
   .option('--no-git', 'Skip git diff analysis')
-  .action(async (path: string, options: { output: string; base?: string; git: boolean }) => {
+  .option('-H, --history', 'Enable history mode (append to existing snapshots)')
+  .option('--max-snapshots <n>', 'Maximum number of snapshots to keep', '50')
+  .option('--snapshot-label <text>', 'Custom label for this snapshot')
+  .action(async (path: string, options: {
+    output: string;
+    base?: string;
+    git: boolean;
+    history?: boolean;
+    maxSnapshots: string;
+    snapshotLabel?: string;
+  }) => {
     console.log(`\n🔍 Code Topology Analyzer\n`);
 
     try {
+      const absolutePath = resolve(path);
+
       // Analyze the directory
       const graph = await analyzeDirectory(path, {
         baseBranch: options.base,
@@ -33,8 +45,12 @@ program
       const outputPath = resolve(options.output);
       await mkdir(dirname(outputPath), { recursive: true });
 
-      // Write JSON output
-      await writeFile(outputPath, JSON.stringify(graph, null, 2), 'utf-8');
+      // Save with history management
+      const dataFile = await saveTopologyData(outputPath, graph, absolutePath, {
+        history: options.history,
+        maxSnapshots: parseInt(options.maxSnapshots, 10),
+        label: options.snapshotLabel,
+      });
 
       // Calculate stats
       const changedCount = graph.nodes.filter(n => n.status !== 'UNCHANGED').length;
@@ -46,6 +62,10 @@ program
       console.log(`\n✅ Topology data written to: ${outputPath}`);
       console.log(`   - Nodes: ${graph.nodes.length}`);
       console.log(`   - Edges: ${graph.edges.length}`);
+
+      if (options.history) {
+        console.log(`   - Snapshots: ${dataFile.snapshots.length}`);
+      }
 
       if (changedCount > 0) {
         console.log(`\n📊 Changes detected:`);

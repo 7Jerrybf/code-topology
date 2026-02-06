@@ -173,3 +173,49 @@ export async function getFileAtRef(
     return null; // File doesn't exist at that ref
   }
 }
+
+/** Current commit information */
+export interface CommitInfo {
+  /** Short commit hash (7 chars) */
+  hash: string;
+  /** First line of commit message */
+  message: string;
+  /** Current branch name */
+  branch: string;
+}
+
+/**
+ * Get current commit information (hash, message, branch)
+ * @param repoPath - Path to the git repository
+ * @returns CommitInfo or null if not a git repo
+ */
+export async function getCurrentCommitInfo(
+  repoPath: string
+): Promise<CommitInfo | null> {
+  const git = simpleGit(repoPath);
+
+  try {
+    const isRepo = await git.checkIsRepo();
+    if (!isRepo) {
+      return null;
+    }
+
+    // Get current branch
+    const branchInfo = await git.branch();
+    const branch = branchInfo.current;
+
+    // Get latest commit info
+    const log = await git.log({ maxCount: 1 });
+    if (!log.latest) {
+      return null;
+    }
+
+    return {
+      hash: log.latest.hash.substring(0, 7),
+      message: (log.latest.message || '').split('\n')[0] || '', // First line only
+      branch,
+    };
+  } catch {
+    return null;
+  }
+}

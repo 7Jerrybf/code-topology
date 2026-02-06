@@ -3,6 +3,9 @@
  * Shared between CLI and Web
  */
 
+/** Supported programming languages */
+export type Language = 'typescript' | 'javascript' | 'python';
+
 /** Node types in the topology graph */
 export type NodeType = 'FILE' | 'COMPONENT' | 'UTILITY';
 
@@ -21,6 +24,8 @@ export interface TopologyNode {
   status: DiffStatus;
   /** Hash/signature for detecting content changes */
   astSignature: string;
+  /** Programming language of the file */
+  language?: Language;
 }
 
 /** An edge representing a dependency between two nodes */
@@ -43,4 +48,48 @@ export interface TopologyGraph {
   edges: TopologyEdge[];
   /** Unix timestamp when the graph was generated */
   timestamp: number;
+}
+
+// ============================================
+// Phase 5: Time Travel - Snapshot Types
+// ============================================
+
+/** Metadata for a topology snapshot */
+export interface SnapshotMetadata {
+  /** Unix timestamp when the snapshot was created */
+  timestamp: number;
+  /** Git commit hash (short) */
+  commitHash: string | null;
+  /** Git commit message (first line) */
+  commitMessage: string | null;
+  /** Git branch name */
+  branch: string | null;
+  /** User-provided label for the snapshot */
+  label: string | null;
+  /** Number of nodes in the graph */
+  nodeCount: number;
+  /** Number of edges in the graph */
+  edgeCount: number;
+  /** Number of changed nodes (ADDED, MODIFIED, DELETED) */
+  changedCount: number;
+  /** Number of broken edges */
+  brokenCount: number;
+}
+
+/** A snapshot containing metadata and graph data */
+export interface TopologySnapshot {
+  /** Snapshot metadata */
+  metadata: SnapshotMetadata;
+  /** The topology graph at this point in time */
+  graph: TopologyGraph;
+}
+
+/** Version 2 data file format with snapshot history */
+export interface TopologyDataFile {
+  /** File format version */
+  version: 2;
+  /** Index of the currently selected snapshot */
+  currentIndex: number;
+  /** Array of snapshots (newest last) */
+  snapshots: TopologySnapshot[];
 }

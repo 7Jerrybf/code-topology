@@ -3,17 +3,37 @@
  * Builds topology graph from import relationships
  */
 
+import { readFile, writeFile } from 'fs/promises';
 import { glob } from 'glob';
 import { resolve, dirname, basename } from 'path';
-import type { TopologyGraph, TopologyNode, TopologyEdge, NodeType, DiffStatus } from '../types.js';
-import { parseFile, parseContentForExports, type ParsedFile } from './parser.js';
-import { getGitDiff, getFileAtRef, type GitDiffResult } from '../git/index.js';
+import type {
+  TopologyGraph,
+  TopologyNode,
+  TopologyEdge,
+  NodeType,
+  DiffStatus,
+  TopologySnapshot,
+  TopologyDataFile,
+  SnapshotMetadata,
+  Language,
+} from '../types.js';
+import { parseFile, parseContentForExports, detectLanguage, SUPPORTED_EXTENSIONS, type ParsedFile } from './parser.js';
+import { getGitDiff, getFileAtRef, getCurrentCommitInfo, type GitDiffResult } from '../git/index.js';
 
 export interface AnalyzeOptions {
   /** Base branch to compare against (default: auto-detect main/master) */
   baseBranch?: string;
   /** Whether to skip git diff analysis */
   skipGitDiff?: boolean;
+}
+
+export interface HistoryOptions {
+  /** Enable history mode (append to existing snapshots) */
+  history?: boolean;
+  /** Maximum number of snapshots to keep */
+  maxSnapshots?: number;
+  /** Custom label for this snapshot */
+  label?: string;
 }
 
 /**
@@ -29,17 +49,51 @@ export async function analyzeDirectory(
   const absolutePath = resolve(dirPath);
   console.log(`📂 Scanning directory: ${absolutePath}`);
 
-  // Find all TypeScript files
-  const rawFiles = await glob('**/*.{ts,tsx}', {
+  // Build glob pattern for all supported extensions
+  const extensionPattern = SUPPORTED_EXTENSIONS.map(ext => ext.slice(1)).join(',');
+
+  // Find all supported source files
+  const rawFiles = await glob(`**/*.{${extensionPattern}}`, {
     cwd: absolutePath,
-    ignore: ['**/node_modules/**', '**/dist/**', '**/.next/**', '**/*.d.ts'],
+    ignore: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.next/**',
+      '**/*.d.ts',
+      '**/__pycache__/**',
+      '**/venv/**',
+      '**/.venv/**',
+      '**/env/**',
+      '**/.env/**',
+    ],
     absolute: false,
   });
 
   // Normalize paths (convert backslashes to forward slashes)
   const files = rawFiles.map(f => toForwardSlash(f));
 
-  console.log(`📄 Found ${files.length} TypeScript files`);
+  // Count files by language
+  const languageStats: Record<Language, number> = {
+    typescript: 0,
+    javascript: 0,
+    python: 0,
+  };
+
+  for (const file of files) {
+    const lang = detectLanguage(file);
+    if (lang) {
+      languageStats[lang]++;
+    }
+  }
+
+  console.log(`📄 Found ${files.length} source files`);
+  const langDetails = Object.entries(languageStats)
+    .filter(([, count]) => count > 0)
+    .map(([lang, count]) => `${lang}: ${count}`)
+    .join(', ');
+  if (langDetails) {
+    console.log(`   ${langDetails}`);
+  }
 
   // Parse all files
   const parsedFiles: ParsedFile[] = [];
@@ -112,9 +166,10 @@ async function buildGraph(
     const node: TopologyNode = {
       id: file.filePath,
       label: basename(file.filePath),
-      type: inferNodeType(file.filePath),
+      type: inferNodeType(file.filePath, file.language),
       status,
       astSignature: file.exportSignature, // Use export signature instead of content hash
+      language: file.language,
     };
     nodes.push(node);
     nodeMap.set(file.filePath, node);
@@ -144,7 +199,7 @@ async function buildGraph(
       }
 
       // Resolve the import path
-      const targetPath = resolveImportPath(file.filePath, imp.source, nodeMap);
+      const targetPath = resolveImportPath(file.filePath, imp.source, nodeMap, file.language);
       if (targetPath && nodeMap.has(targetPath)) {
         // Check if this edge is broken:
         // - Target file's exports changed
@@ -195,8 +250,7 @@ async function checkExportSignatureChange(
     }
 
     // Parse exports from base version
-    const isTsx = filePath.endsWith('.tsx');
-    const baseSignature = parseContentForExports(baseContent, isTsx);
+    const baseSignature = parseContentForExports(baseContent, filePath);
 
     // Compare signatures
     return baseSignature !== currentSignature;
@@ -206,20 +260,35 @@ async function checkExportSignatureChange(
 }
 
 /**
- * Infer node type from file path
+ * Infer node type from file path and language
  */
-function inferNodeType(filePath: string): NodeType {
+function inferNodeType(filePath: string, language: Language): NodeType {
   const name = basename(filePath).toLowerCase();
   const dir = dirname(filePath).toLowerCase();
 
-  // Components (React)
-  if (dir.includes('component') || name.endsWith('.tsx')) {
+  // Components (React - TSX/JSX)
+  if (name.endsWith('.tsx') || name.endsWith('.jsx')) {
+    return 'COMPONENT';
+  }
+  if (dir.includes('component') || dir.includes('components')) {
     return 'COMPONENT';
   }
 
-  // Utilities
+  // Utilities - common patterns across languages
   if (dir.includes('util') || dir.includes('helper') || dir.includes('lib')) {
     return 'UTILITY';
+  }
+
+  // Python-specific patterns
+  if (language === 'python') {
+    // Python utility modules
+    if (name.startsWith('utils') || name.startsWith('helpers')) {
+      return 'UTILITY';
+    }
+    // Python views/controllers can be considered components
+    if (dir.includes('views') || dir.includes('controllers')) {
+      return 'COMPONENT';
+    }
   }
 
   return 'FILE';
@@ -231,10 +300,16 @@ function inferNodeType(filePath: string): NodeType {
 function resolveImportPath(
   fromFile: string,
   importSource: string,
-  nodeMap: Map<string, TopologyNode>
+  nodeMap: Map<string, TopologyNode>,
+  language: Language
 ): string | null {
   const fromDir = dirname(fromFile).replace(/\\/g, '/');
 
+  if (language === 'python') {
+    return resolvePythonImportPath(fromFile, importSource, nodeMap);
+  }
+
+  // JavaScript/TypeScript import resolution
   // Handle ESM .js extension (maps to .ts in source)
   let source = importSource;
   if (source.endsWith('.js')) {
@@ -250,11 +325,75 @@ function resolveImportPath(
   }
 
   // Try with extensions
-  const extensions = ['.ts', '.tsx', '/index.ts', '/index.tsx'];
+  const extensions = ['.ts', '.tsx', '.js', '.jsx', '/index.ts', '/index.tsx', '/index.js', '/index.jsx'];
   for (const ext of extensions) {
     const withExt = resolved + ext;
     if (nodeMap.has(withExt)) {
       return withExt;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolve Python import path
+ * Handles relative imports like '.module' or '..package.module'
+ */
+function resolvePythonImportPath(
+  fromFile: string,
+  importSource: string,
+  nodeMap: Map<string, TopologyNode>
+): string | null {
+  const fromDir = dirname(fromFile).replace(/\\/g, '/');
+
+  // Count leading dots for relative imports
+  let dotCount = 0;
+  for (const char of importSource) {
+    if (char === '.') {
+      dotCount++;
+    } else {
+      break;
+    }
+  }
+
+  if (dotCount === 0) {
+    // Absolute import - try to find in node map directly
+    const modulePath = importSource.replace(/\./g, '/');
+    const candidates = [
+      `${modulePath}.py`,
+      `${modulePath}/__init__.py`,
+    ];
+    for (const candidate of candidates) {
+      if (nodeMap.has(candidate)) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  // Relative import
+  const relativePart = importSource.slice(dotCount);
+  let basePath = fromDir;
+
+  // Go up directories based on dot count (. = current, .. = parent, etc.)
+  for (let i = 1; i < dotCount; i++) {
+    basePath = dirname(basePath);
+  }
+
+  // Convert module path to file path
+  const modulePath = relativePart.replace(/\./g, '/');
+  const resolved = modulePath ? normalizePath(`${basePath}/${modulePath}`) : basePath;
+
+  // Try possible file paths
+  const candidates = [
+    `${resolved}.py`,
+    `${resolved}/__init__.py`,
+  ];
+
+  for (const candidate of candidates) {
+    if (nodeMap.has(candidate)) {
+      return candidate;
     }
   }
 
@@ -279,4 +418,149 @@ function normalizePath(path: string): string {
   }
 
   return result.join('/');
+}
+
+// ============================================
+// Phase 5: Time Travel - Snapshot Management
+// ============================================
+
+/**
+ * Load existing topology data file (supports both v1 and v2 formats)
+ */
+export async function loadExistingData(
+  filePath: string
+): Promise<TopologyDataFile | null> {
+  try {
+    const content = await readFile(filePath, 'utf-8');
+    const data = JSON.parse(content);
+    return migrateToV2(data);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Migrate v1 (single graph) to v2 (snapshots array) format
+ */
+function migrateToV2(data: unknown): TopologyDataFile {
+  // Check if already v2 format
+  if (
+    data &&
+    typeof data === 'object' &&
+    'version' in data &&
+    (data as { version: unknown }).version === 2
+  ) {
+    return data as TopologyDataFile;
+  }
+
+  // Assume v1 format (TopologyGraph directly)
+  const legacyGraph = data as TopologyGraph;
+
+  const metadata: SnapshotMetadata = {
+    timestamp: legacyGraph.timestamp || Date.now(),
+    commitHash: null,
+    commitMessage: null,
+    branch: null,
+    label: null,
+    nodeCount: legacyGraph.nodes?.length || 0,
+    edgeCount: legacyGraph.edges?.length || 0,
+    changedCount: legacyGraph.nodes?.filter((n) => n.status !== 'UNCHANGED').length || 0,
+    brokenCount: legacyGraph.edges?.filter((e) => e.isBroken).length || 0,
+  };
+
+  return {
+    version: 2,
+    currentIndex: 0,
+    snapshots: [
+      {
+        metadata,
+        graph: legacyGraph,
+      },
+    ],
+  };
+}
+
+/**
+ * Create a snapshot from a graph with metadata
+ */
+export async function createSnapshot(
+  graph: TopologyGraph,
+  repoPath: string,
+  label?: string
+): Promise<TopologySnapshot> {
+  // Get git commit info
+  const commitInfo = await getCurrentCommitInfo(repoPath);
+
+  const metadata: SnapshotMetadata = {
+    timestamp: graph.timestamp,
+    commitHash: commitInfo?.hash || null,
+    commitMessage: commitInfo?.message || null,
+    branch: commitInfo?.branch || null,
+    label: label || null,
+    nodeCount: graph.nodes.length,
+    edgeCount: graph.edges.length,
+    changedCount: graph.nodes.filter((n) => n.status !== 'UNCHANGED').length,
+    brokenCount: graph.edges.filter((e) => e.isBroken).length,
+  };
+
+  return {
+    metadata,
+    graph,
+  };
+}
+
+/**
+ * Save topology data with optional history management
+ */
+export async function saveTopologyData(
+  outputPath: string,
+  graph: TopologyGraph,
+  repoPath: string,
+  options: HistoryOptions = {}
+): Promise<TopologyDataFile> {
+  const { history = false, maxSnapshots = 50, label } = options;
+
+  // Create new snapshot
+  const snapshot = await createSnapshot(graph, repoPath, label);
+
+  let dataFile: TopologyDataFile;
+
+  if (history) {
+    // Load existing data or create new
+    const existing = await loadExistingData(outputPath);
+
+    if (existing) {
+      // Append to existing snapshots
+      existing.snapshots.push(snapshot);
+      existing.currentIndex = existing.snapshots.length - 1;
+
+      // Trim to max snapshots (keep most recent)
+      if (existing.snapshots.length > maxSnapshots) {
+        const excess = existing.snapshots.length - maxSnapshots;
+        existing.snapshots.splice(0, excess);
+        existing.currentIndex = existing.snapshots.length - 1;
+      }
+
+      dataFile = existing;
+    } else {
+      // Create new file with single snapshot
+      dataFile = {
+        version: 2,
+        currentIndex: 0,
+        snapshots: [snapshot],
+      };
+    }
+  } else {
+    // Non-history mode: single snapshot (overwrite)
+    dataFile = {
+      version: 2,
+      currentIndex: 0,
+      snapshots: [snapshot],
+    };
+  }
+
+  // Write to file
+  await writeFile(outputPath, JSON.stringify(dataFile, null, 2), 'utf-8');
+
+  return dataFile;
 }
