@@ -4,12 +4,18 @@
   "private": true,
   "description": "Local-first visualization tool for code dependency analysis",
   "scripts": {
+    "analyze": "npx tsx cli/src/index.ts analyze .",
     "cli": "pnpm --filter @topology/cli",
     "web": "pnpm --filter @topology/web",
     "dev:web": "pnpm --filter @topology/web dev",
     "build": "pnpm -r build"
   },
-  "keywords": ["ast", "topology", "visualization", "code-analysis"],
+  "keywords": [
+    "ast",
+    "topology",
+    "visualization",
+    "code-analysis"
+  ],
   "license": "MIT",
   "packageManager": "pnpm@9.0.0",
   "engines": {
