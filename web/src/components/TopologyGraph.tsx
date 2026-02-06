@@ -139,7 +139,7 @@ export function TopologyGraph({ data, onNodeClick }: TopologyGraphProps) {
       <Controls className="!bg-white !border-slate-200 !shadow-md" />
       <MiniMap
         nodeColor={(node) => {
-          const nodeData = node.data as TopologyNodeData | undefined;
+          const nodeData = node.data as unknown as TopologyNodeData | undefined;
           switch (nodeData?.type) {
             case 'COMPONENT':
               return '#10b981';
