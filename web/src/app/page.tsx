@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { TopologyGraph } from '@/components/TopologyGraph';
-import type { TopologyGraph as TopologyGraphData, TopologyNode } from '@/types/topology';
+import { ExplainModal } from '@/components/ExplainModal';
+import type { TopologyGraph as TopologyGraphData, TopologyNode, TopologyEdge } from '@/types/topology';
+import type { ExplainResult, ExplainError } from '@/types/explain';
 import { FileCode, Component, Wrench, GitBranch, Clock } from 'lucide-react';
 
 export default function Home() {
@@ -10,6 +12,12 @@ export default function Home() {
   const [selectedNode, setSelectedNode] = useState<TopologyNode | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // AI Explain states
+  const [explainEdge, setExplainEdge] = useState<TopologyEdge | null>(null);
+  const [isExplaining, setIsExplaining] = useState(false);
+  const [explainResult, setExplainResult] = useState<ExplainResult | null>(null);
+  const [explainError, setExplainError] = useState<ExplainError | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -33,6 +41,55 @@ export default function Home() {
     const node = graphData?.nodes.find((n) => n.id === nodeId);
     setSelectedNode(node || null);
   };
+
+  const fetchExplanation = useCallback(async (edge: TopologyEdge) => {
+    setIsExplaining(true);
+    setExplainResult(null);
+    setExplainError(null);
+
+    try {
+      const response = await fetch('/api/explain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceFile: edge.source,
+          targetFile: edge.target,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setExplainError(data as ExplainError);
+      } else {
+        setExplainResult(data as ExplainResult);
+      }
+    } catch {
+      setExplainError({
+        code: 'NETWORK_ERROR',
+        message: 'Failed to connect to the server',
+      });
+    } finally {
+      setIsExplaining(false);
+    }
+  }, []);
+
+  const handleBrokenEdgeClick = useCallback((edge: TopologyEdge) => {
+    setExplainEdge(edge);
+    fetchExplanation(edge);
+  }, [fetchExplanation]);
+
+  const handleCloseExplain = useCallback(() => {
+    setExplainEdge(null);
+    setExplainResult(null);
+    setExplainError(null);
+  }, []);
+
+  const handleRetryExplain = useCallback(() => {
+    if (explainEdge) {
+      fetchExplanation(explainEdge);
+    }
+  }, [explainEdge, fetchExplanation]);
 
   if (loading) {
     return (
@@ -76,7 +133,11 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <TopologyGraph data={graphData} onNodeClick={handleNodeClick} />
+            <TopologyGraph
+              data={graphData}
+              onNodeClick={handleNodeClick}
+              onBrokenEdgeClick={handleBrokenEdgeClick}
+            />
           )}
         </div>
 
@@ -100,6 +161,17 @@ export default function Home() {
           )}
         </aside>
       </div>
+
+      {/* AI Explain Modal */}
+      <ExplainModal
+        edge={explainEdge}
+        isOpen={explainEdge !== null}
+        onClose={handleCloseExplain}
+        isLoading={isExplaining}
+        result={explainResult}
+        error={explainError}
+        onRetry={handleRetryExplain}
+      />
     </main>
   );
 }

@@ -119,7 +119,7 @@ interface TopologyGraph {
 
 ## 5. 開發階段路徑圖 (Implementation Phases)
 
-**目前階段：Phase 3 ✅ 完成 → Phase 4 待開始**
+**目前階段：Phase 4 ✅ 完成**
 
 ### Phase 1: 骨架搭建與 AST 解析 (Week 1)
 
@@ -177,8 +177,15 @@ interface TopologyGraph {
 
 ### Phase 4: AI 洞察 (Week 4)
 
-* [ ] 接入 LLM API。
-* [ ] 實作「Click-to-Explain」：將 Broken Edge 的兩端代碼送給 AI 解釋原因。
+* [x] 接入 LLM API。 ✅ (2026-02-06)
+  - Google Generative AI SDK (Gemini) 整合完成
+  - API Route `/api/explain` 處理 POST 請求
+  - 環境變數 `GOOGLE_AI_API_KEY` 設定
+* [x] 實作「Click-to-Explain」：將 Broken Edge 的兩端代碼送給 AI 解釋原因。 ✅ (2026-02-06)
+  - 點擊紅色虛線 (broken edge) 觸發 AI 分析
+  - ExplainModal 顯示三個區塊：What Changed / Why Breaking / How to Fix
+  - 錯誤處理：NO_API_KEY / RATE_LIMIT / NETWORK_ERROR / FILE_NOT_FOUND
+  - 複製分析結果功能
 
 ---
 

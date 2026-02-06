@@ -15,7 +15,7 @@ import dagre from 'dagre';
 import '@xyflow/react/dist/style.css';
 
 import { TopologyNode, type TopologyNodeData } from './TopologyNode';
-import type { TopologyGraph as TopologyGraphData } from '@/types/topology';
+import type { TopologyGraph as TopologyGraphData, TopologyEdge } from '@/types/topology';
 
 // Register custom node types
 const nodeTypes: NodeTypes = {
@@ -62,9 +62,10 @@ function getLayoutedElements(
 interface TopologyGraphProps {
   data: TopologyGraphData | null;
   onNodeClick?: (nodeId: string) => void;
+  onBrokenEdgeClick?: (edge: TopologyEdge) => void;
 }
 
-export function TopologyGraph({ data, onNodeClick }: TopologyGraphProps) {
+export function TopologyGraph({ data, onNodeClick, onBrokenEdgeClick }: TopologyGraphProps) {
   const { nodes, edges } = useMemo(() => {
     if (!data) {
       return { nodes: [], edges: [] };
@@ -87,8 +88,9 @@ export function TopologyGraph({ data, onNodeClick }: TopologyGraphProps) {
       source: edge.source,
       target: edge.target,
       animated: edge.isBroken,
+      data: { isBroken: edge.isBroken },
       style: edge.isBroken
-        ? { stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '5,5' }
+        ? { stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '5,5', cursor: 'pointer' }
         : { stroke: '#94a3b8', strokeWidth: 1.5 },
       markerEnd: {
         type: MarkerType.ArrowClosed,
@@ -106,6 +108,19 @@ export function TopologyGraph({ data, onNodeClick }: TopologyGraphProps) {
       onNodeClick?.(node.id);
     },
     [onNodeClick]
+  );
+
+  const handleEdgeClick = useCallback(
+    (_: React.MouseEvent, edge: Edge) => {
+      // Only trigger for broken edges
+      if (edge.data?.isBroken && onBrokenEdgeClick) {
+        const originalEdge = data?.edges.find((e) => e.id === edge.id);
+        if (originalEdge) {
+          onBrokenEdgeClick(originalEdge);
+        }
+      }
+    },
+    [data?.edges, onBrokenEdgeClick]
   );
 
   if (!data) {
@@ -126,6 +141,7 @@ export function TopologyGraph({ data, onNodeClick }: TopologyGraphProps) {
       nodes={nodes}
       edges={edges}
       onNodeClick={handleNodeClick}
+      onEdgeClick={handleEdgeClick}
       nodeTypes={nodeTypes}
       fitView
       fitViewOptions={{ padding: 0.2 }}
