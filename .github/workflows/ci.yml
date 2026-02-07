@@ -30,11 +30,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build CLI
-        run: pnpm --filter @topology/cli build
-
-      - name: Build Web
-        run: pnpm --filter @topology/web build
+      - name: Build all packages
+        run: pnpm build
 
   lint:
     runs-on: ubuntu-latest
@@ -55,11 +52,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Type check CLI
-        run: pnpm --filter @topology/cli build
-
-      - name: Type check Web
-        run: pnpm --filter @topology/web build
+      - name: Type check all packages
+        run: pnpm build
 
   topology-check:
     runs-on: ubuntu-latest
@@ -83,8 +77,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build CLI
-        run: pnpm --filter @topology/cli build
+      - name: Build all packages
+        run: pnpm build
 
       - name: Run topology analysis
         id: topology

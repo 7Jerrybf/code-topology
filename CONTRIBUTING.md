@@ -1,14 +1,15 @@
-# Contributing to Code Topology MVP
+# Contributing to Code Topology
 
 Thank you for your interest in contributing! This document provides guidelines and steps for contributing.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
 - [Development Workflow](#development-workflow)
 - [Pull Request Process](#pull-request-process)
 - [Coding Standards](#coding-standards)
+- [Plugin Development](#plugin-development)
 
 ---
 
@@ -23,20 +24,23 @@ Please be respectful and constructive in all interactions. We welcome contributo
 ### Prerequisites
 
 - Node.js 20+
-- pnpm (`npm install -g pnpm`)
+- pnpm >= 9 (`npm install -g pnpm`)
 - Git
 
 ### Setup
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/YOUR_USERNAME/code-topology-mvp.git
-cd code-topology-mvp
+git clone https://github.com/YOUR_USERNAME/code-topology.git
+cd code-topology
 
 # Install dependencies
 pnpm install
 
-# Run the CLI
+# Build all packages (respects dependency order via Turborepo)
+pnpm build
+
+# Run the CLI analyzer
 pnpm run analyze
 
 # Start the web dev server
@@ -49,59 +53,73 @@ pnpm run dev:web
 
 ### Project Structure
 
-| Directory | Purpose |
-|-----------|---------|
-| `cli/` | Backend CLI - AST parsing, Git operations |
-| `web/` | Frontend - React Flow visualization |
-| `output/` | Generated topology data |
+This is a **Turborepo monorepo** with the following packages:
+
+| Package | Directory | Purpose |
+|---------|-----------|---------|
+| `@topology/protocol` | `packages/protocol/` | Shared Zod schemas and type definitions |
+| `@topology/core` | `packages/core/` | AST parsing, Git diff, graph building, plugin system |
+| `@topology/server` | `packages/server/` | WebSocket server, file watcher |
+| `@topology/web` | `packages/web/` | Next.js + React Flow visualization |
+| `@topology/cli` | `cli/` | CLI interface (thin shell over core) |
+
+**Build dependency order**: `protocol` -> `core` -> `server` -> `cli` / `web`
 
 ### Available Scripts
 
 ```bash
 # Root level
 pnpm install          # Install all dependencies
-pnpm run analyze      # Run CLI analyzer
+pnpm build            # Build all packages (via Turborepo)
+pnpm run analyze      # Run CLI topology analysis
+pnpm run dev:web      # Start web dev server (with dependencies)
 
-# Web
-cd web
-pnpm run dev          # Start Next.js dev server
-pnpm run build        # Build for production
-
-# CLI
-cd cli
-pnpm run build        # Compile TypeScript
+# Individual packages
+pnpm --filter @topology/core build
+pnpm --filter @topology/web dev
+pnpm --filter @topology/cli build
 ```
+
+### Build System
+
+We use **Turborepo** for incremental builds. The `turbo.json` config ensures packages are built in the correct dependency order. Always use `pnpm build` (which invokes `turbo build`) rather than building individual packages directly, unless you're sure all dependencies are already built.
 
 ---
 
 ## Pull Request Process
 
 1. **Fork** the repository
-2. **Create a branch** for your feature (`git checkout -b feature/amazing-feature`)
+2. **Create a branch** for your feature (`git checkout -b feat/amazing-feature`)
 3. **Make changes** following our coding standards
-4. **Test** your changes locally
-5. **Commit** with clear messages (`git commit -m 'feat: add amazing feature'`)
-6. **Push** to your fork (`git push origin feature/amazing-feature`)
-7. **Open a Pull Request**
+4. **Build** to verify (`pnpm build`)
+5. **Test** your changes locally
+6. **Commit** with clear messages (`git commit -m 'feat: add amazing feature'`)
+7. **Push** to your fork (`git push origin feat/amazing-feature`)
+8. **Open a Pull Request** against `main`
+
+### PR Topology Check
+
+Pull requests automatically trigger a topology analysis that checks for broken dependencies and posts a report as a PR comment.
 
 ### Commit Message Format
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
-<type>: <description>
+<type>(<scope>): <description>
 
 [optional body]
 ```
 
-Types:
+**Types**:
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation
-- `style`: Formatting (no code change)
 - `refactor`: Code refactoring
 - `test`: Adding tests
 - `chore`: Maintenance
+
+**Scopes** (optional): `core`, `web`, `cli`, `server`, `protocol`, `ci`
 
 ---
 
@@ -109,33 +127,71 @@ Types:
 
 ### TypeScript
 
-- Use TypeScript strict mode
-- Avoid `any` type (except for complex AST nodes with comments)
-- Use functional components with hooks for React
+- Use TypeScript strict mode (enforced by `tsconfig.base.json`)
+- Avoid `any` type - use proper typing or `unknown`
+- All data structures must align with schemas in `@topology/protocol`
+
+### Architecture Rules
+
+- **Schema Consistency**: Check `packages/protocol` before modifying data structures
+- **Think in Graphs**: When adding a feature, consider how it affects the dependency graph
+- **Performance**: Target repos with 10k+ files - avoid O(N^2) algorithms in hot paths
+- **Modularity**: Keep Core logic decoupled from UI - Core must run in headless CI environments
 
 ### Error Handling
 
-- CLI: Use `console.warn` and skip files on parse errors (never crash)
-- Web: Show friendly "No Data Found" message if JSON is missing
+- CLI: Use `console.warn` and skip files on parse errors (never crash the analyzer)
+- Web: Show friendly messages if data is missing or malformed
 
 ### Style
 
-- Use ESLint and Prettier
 - Follow existing code patterns
+- Use functional React components with hooks
 - Write meaningful variable names
 
 ---
 
-## 💡 Ideas for Contributions
+## Plugin Development
 
-- [ ] Add support for more languages (JavaScript, Python, Go)
+Code Topology supports language plugins to extend AST parsing to new languages.
+
+### Creating a Language Plugin
+
+Implement the `LanguagePlugin` interface from `@topology/core`:
+
+```typescript
+import type { LanguagePlugin } from '@topology/core';
+
+export const myLanguagePlugin: LanguagePlugin = {
+  name: 'my-language',
+  extensions: ['.mylang'],
+  parseImports(content: string, filePath: string) {
+    // Return array of import specifiers
+    return [];
+  },
+  parseExports(content: string, filePath: string) {
+    // Return array of export specifiers
+    return [];
+  },
+};
+```
+
+Built-in plugins for TypeScript/JavaScript and Python are located in `packages/core/src/plugins/built-in/`.
+
+---
+
+## Ideas for Contributions
+
+- [ ] Add language support (Go, Java, Rust, C#)
 - [ ] Improve graph layout algorithms
-- [ ] Add dark/light theme toggle
+- [ ] Add unit tests for core parsing logic
 - [ ] Create VS Code extension
-- [ ] Add AI-powered explanations for broken dependencies
+- [ ] Implement MCP Server for AI agent integration
+- [ ] Add circular dependency detection rules
+- [ ] Performance benchmarks for large repositories
 
 ---
 
 ## Questions?
 
-Feel free to open an issue for questions or discussions!
+Feel free to open an [issue](https://github.com/7Jerrybf/code-topology/issues) for questions or discussions!
