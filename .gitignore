@@ -6,6 +6,7 @@ node_modules/
 dist/
 .next/
 out/
+.turbo/
 
 # Output data (generated JSON)
 output/*.json

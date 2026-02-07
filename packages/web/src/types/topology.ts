@@ -1,12 +1,12 @@
 /**
- * Core data structures for code topology analysis
+ * Topology data types
  * Re-exported from @topology/protocol (Single Source of Truth)
  */
 
 export {
-  type Language,
   type NodeType,
   type DiffStatus,
+  type Language,
   type TopologyNode,
   type TopologyEdge,
   type TopologyGraph,

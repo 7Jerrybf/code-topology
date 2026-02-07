@@ -1,6 +1,6 @@
 /**
  * Git Operations Module
- * Uses simple-git to read local git state and compare branches
+ * Re-exported from @topology/core
  */
 
-export { getGitDiff, getFileAtRef, getCurrentCommitInfo, type GitDiffResult, type CommitInfo } from './diff.js';
+export { getGitDiff, getFileAtRef, getCurrentCommitInfo, type GitDiffResult, type CommitInfo } from '@topology/core/git';

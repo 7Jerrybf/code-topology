@@ -3,10 +3,9 @@
 import { Command } from 'commander';
 import { mkdir, writeFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
-import { analyzeDirectory, saveTopologyData, createSnapshot } from './analyzer/index.js';
-import { FileWatcher } from './watcher/index.js';
-import { TopologyWsServer } from './watcher/index.js';
-import { generateReport, type ReportFormat } from './reporter/index.js';
+import { analyzeDirectory, saveTopologyData, createSnapshot } from '@topology/core';
+import { generateReport, type ReportFormat } from '@topology/core/reporter';
+import { FileWatcher, TopologyWsServer } from '@topology/server';
 
 const program = new Command();
 
@@ -19,7 +18,7 @@ program
   .command('analyze')
   .description('Analyze a directory and generate topology graph')
   .argument('[path]', 'Path to analyze', '.')
-  .option('-o, --output <file>', 'Output JSON file path', './web/public/data/topology-data.json')
+  .option('-o, --output <file>', 'Output JSON file path', './packages/web/public/data/topology-data.json')
   .option('-b, --base <branch>', 'Base branch to compare against (default: auto-detect main/master)')
   .option('--no-git', 'Skip git diff analysis')
   .option('-H, --history', 'Enable history mode (append to existing snapshots)')
@@ -134,7 +133,7 @@ program
   .argument('[path]', 'Path to watch', '.')
   .option('-p, --port <number>', 'WebSocket server port', '8765')
   .option('-d, --debounce <ms>', 'Debounce delay in milliseconds', '300')
-  .option('-o, --output <file>', 'Output JSON file path', './web/public/data/topology-data.json')
+  .option('-o, --output <file>', 'Output JSON file path', './packages/web/public/data/topology-data.json')
   .option('-b, --base <branch>', 'Base branch to compare against')
   .option('--no-git', 'Skip git diff analysis')
   .action(async (path: string, options: {

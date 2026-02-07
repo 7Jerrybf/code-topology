@@ -1,6 +1,6 @@
 /**
  * AST Analyzer Module
- * Uses Tree-sitter to parse TypeScript files and extract import/export relationships
+ * Re-exported from @topology/core
  */
 
 export {
@@ -10,7 +10,7 @@ export {
   createSnapshot,
   type AnalyzeOptions,
   type HistoryOptions,
-} from './scanner.js';
+} from '@topology/core';
 export {
   parseFile,
   parseContentForExports,
@@ -18,4 +18,4 @@ export {
   SUPPORTED_EXTENSIONS,
   type ParsedImport,
   type ParsedFile,
-} from './parser.js';
+} from '@topology/core/parser';

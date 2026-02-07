@@ -1,6 +1,6 @@
 /**
- * Report Generator Module
- * Re-exported from @topology/core
+ * Reporter module - generate analysis reports in various formats
+ * @module @topology/core/reporter
  */
 
 export {
@@ -10,4 +10,4 @@ export {
   type ReportSummary,
   type BrokenDependencyInfo,
   type JsonReport,
-} from '@topology/core/reporter';
+} from './reporter.js';

@@ -1,0 +1,730 @@
+{
+  "version": 2,
+  "currentIndex": 0,
+  "snapshots": [
+    {
+      "metadata": {
+        "timestamp": 1770452098700,
+        "commitHash": "4c900b8",
+        "commitMessage": "feat: implement Phase 6 Developer Ecosystem integration",
+        "branch": "main",
+        "label": null,
+        "nodeCount": 58,
+        "edgeCount": 40,
+        "changedCount": 26,
+        "brokenCount": 0
+      },
+      "graph": {
+        "nodes": [
+          {
+            "id": "packages/web/tailwind.config.ts",
+            "label": "tailwind.config.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "405b4165",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/postcss.config.mjs",
+            "label": "postcss.config.mjs",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "405b4165",
+            "language": "javascript"
+          },
+          {
+            "id": "packages/web/next.config.ts",
+            "label": "next.config.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "33489eee",
+            "language": "typescript"
+          },
+          {
+            "id": "cli/src/types.ts",
+            "label": "types.ts",
+            "type": "FILE",
+            "status": "MODIFIED",
+            "astSignature": "47fb5771",
+            "language": "typescript"
+          },
+          {
+            "id": "cli/src/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "MODIFIED",
+            "astSignature": "00000000",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/server/src/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "6bb2d2d3",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/protocol/src/websocket.ts",
+            "label": "websocket.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "5496e726",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/protocol/src/topology.ts",
+            "label": "topology.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "64a3bbce",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/protocol/src/intent.ts",
+            "label": "intent.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "305179cc",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/protocol/src/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "0d22461b",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/protocol/src/explain.ts",
+            "label": "explain.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "4a9f40ea",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "70914084",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/analyze.ts",
+            "label": "analyze.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "5e5a10cc",
+            "language": "typescript"
+          },
+          {
+            "id": "cli/src/watcher/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "MODIFIED",
+            "astSignature": "6bb2d2d3",
+            "language": "typescript"
+          },
+          {
+            "id": "cli/src/reporter/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "MODIFIED",
+            "astSignature": "325473d6",
+            "language": "typescript"
+          },
+          {
+            "id": "cli/src/git/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "MODIFIED",
+            "astSignature": "1dadd085",
+            "language": "typescript"
+          },
+          {
+            "id": "cli/src/analyzer/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "MODIFIED",
+            "astSignature": "7bb54cc4",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/types/topology.ts",
+            "label": "topology.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "47fb5771",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/types/explain.ts",
+            "label": "explain.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "36f7399a",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/lib/utils.ts",
+            "label": "utils.ts",
+            "type": "UTILITY",
+            "status": "UNCHANGED",
+            "astSignature": "05d0445d",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/lib/ai.ts",
+            "label": "ai.ts",
+            "type": "UTILITY",
+            "status": "UNCHANGED",
+            "astSignature": "49053fb2",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/hooks/useWebSocketUpdates.ts",
+            "label": "useWebSocketUpdates.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "664c8d23",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/stores/topologyStore.ts",
+            "label": "topologyStore.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "43d8373e",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/TopologyNode.tsx",
+            "label": "TopologyNode.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "0ec4f8f5",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/TopologyGraph.tsx",
+            "label": "TopologyGraph.tsx",
+            "type": "COMPONENT",
+            "status": "MODIFIED",
+            "astSignature": "044c28cd",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/TimelineSlider.tsx",
+            "label": "TimelineSlider.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "55dced94",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ThemeToggle.tsx",
+            "label": "ThemeToggle.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "7fdbdd55",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ThemeProvider.tsx",
+            "label": "ThemeProvider.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "154cf388",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/SearchPanel.tsx",
+            "label": "SearchPanel.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "7b543d6a",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/LiveIndicator.tsx",
+            "label": "LiveIndicator.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "11319ccf",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ExplainModal.tsx",
+            "label": "ExplainModal.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "019b7278",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/app/page.tsx",
+            "label": "page.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "2d3b938f",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/app/layout.tsx",
+            "label": "layout.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "41d70050",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/server/src/watcher/wsServer.ts",
+            "label": "wsServer.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "09ed9293",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/server/src/watcher/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "6bb2d2d3",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/server/src/watcher/fileWatcher.ts",
+            "label": "fileWatcher.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "4fa8b634",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/reporter/reporter.ts",
+            "label": "reporter.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "41548db6",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/reporter/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "325473d6",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/plugins/types.ts",
+            "label": "types.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "4953536b",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/plugins/registry.ts",
+            "label": "registry.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "66f8a6bd",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/plugins/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "0637206f",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/parser/parser.ts",
+            "label": "parser.ts",
+            "type": "FILE",
+            "status": "MODIFIED",
+            "astSignature": "3b8e346f",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/parser/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "049c74e9",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/graph/snapshot.ts",
+            "label": "snapshot.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "3124de98",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/graph/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "64d17966",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/graph/builder.ts",
+            "label": "builder.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "0b02fa8e",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/git/index.ts",
+            "label": "index.ts",
+            "type": "FILE",
+            "status": "ADDED",
+            "astSignature": "1dadd085",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/git/diff.ts",
+            "label": "diff.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "0943d1fc",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ui/tooltip.tsx",
+            "label": "tooltip.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "41bdd7a6",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ui/slider.tsx",
+            "label": "slider.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "5f261862",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ui/scroll-area.tsx",
+            "label": "scroll-area.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "65bef334",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ui/input.tsx",
+            "label": "input.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "47ccbbd7",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ui/dialog.tsx",
+            "label": "dialog.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "285f5d7d",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ui/button.tsx",
+            "label": "button.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "644023d5",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/components/ui/badge.tsx",
+            "label": "badge.tsx",
+            "type": "COMPONENT",
+            "status": "UNCHANGED",
+            "astSignature": "43582af8",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/plugins/built-in/typescript.ts",
+            "label": "typescript.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "495677f5",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/core/src/plugins/built-in/python.ts",
+            "label": "python.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "5d0bbf5e",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/app/api/explain/route.ts",
+            "label": "route.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "2d386bee",
+            "language": "typescript"
+          }
+        ],
+        "edges": [
+          {
+            "id": "e0",
+            "source": "packages/server/src/index.ts",
+            "target": "packages/server/src/watcher/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e1",
+            "source": "packages/server/src/index.ts",
+            "target": "packages/server/src/watcher/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e2",
+            "source": "packages/protocol/src/websocket.ts",
+            "target": "packages/protocol/src/topology.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e3",
+            "source": "packages/protocol/src/index.ts",
+            "target": "packages/protocol/src/topology.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e4",
+            "source": "packages/protocol/src/index.ts",
+            "target": "packages/protocol/src/explain.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e5",
+            "source": "packages/protocol/src/index.ts",
+            "target": "packages/protocol/src/websocket.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e6",
+            "source": "packages/protocol/src/index.ts",
+            "target": "packages/protocol/src/intent.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e7",
+            "source": "packages/core/src/index.ts",
+            "target": "packages/core/src/analyze.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e8",
+            "source": "packages/core/src/index.ts",
+            "target": "packages/core/src/parser/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e9",
+            "source": "packages/core/src/index.ts",
+            "target": "packages/core/src/git/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e10",
+            "source": "packages/core/src/index.ts",
+            "target": "packages/core/src/graph/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e11",
+            "source": "packages/core/src/index.ts",
+            "target": "packages/core/src/reporter/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e12",
+            "source": "packages/core/src/index.ts",
+            "target": "packages/core/src/plugins/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e13",
+            "source": "packages/core/src/analyze.ts",
+            "target": "packages/core/src/parser/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e14",
+            "source": "packages/core/src/analyze.ts",
+            "target": "packages/core/src/git/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e15",
+            "source": "packages/core/src/analyze.ts",
+            "target": "packages/core/src/graph/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e16",
+            "source": "packages/web/src/components/TopologyGraph.tsx",
+            "target": "packages/web/src/components/TopologyNode.tsx",
+            "isBroken": false
+          },
+          {
+            "id": "e17",
+            "source": "packages/server/src/watcher/index.ts",
+            "target": "packages/server/src/watcher/fileWatcher.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e18",
+            "source": "packages/server/src/watcher/index.ts",
+            "target": "packages/server/src/watcher/wsServer.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e19",
+            "source": "packages/core/src/reporter/index.ts",
+            "target": "packages/core/src/reporter/reporter.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e20",
+            "source": "packages/core/src/plugins/registry.ts",
+            "target": "packages/core/src/plugins/types.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e21",
+            "source": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/plugins/registry.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e22",
+            "source": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/plugins/types.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e23",
+            "source": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/plugins/built-in/typescript.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e24",
+            "source": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/plugins/built-in/python.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e25",
+            "source": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/plugins/registry.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e26",
+            "source": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/plugins/built-in/typescript.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e27",
+            "source": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/plugins/built-in/python.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e28",
+            "source": "packages/core/src/parser/index.ts",
+            "target": "packages/core/src/parser/parser.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e29",
+            "source": "packages/core/src/graph/snapshot.ts",
+            "target": "packages/core/src/git/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e30",
+            "source": "packages/core/src/graph/index.ts",
+            "target": "packages/core/src/graph/builder.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e31",
+            "source": "packages/core/src/graph/index.ts",
+            "target": "packages/core/src/graph/snapshot.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e32",
+            "source": "packages/core/src/graph/builder.ts",
+            "target": "packages/core/src/parser/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e33",
+            "source": "packages/core/src/graph/builder.ts",
+            "target": "packages/core/src/parser/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e34",
+            "source": "packages/core/src/graph/builder.ts",
+            "target": "packages/core/src/git/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e35",
+            "source": "packages/core/src/git/index.ts",
+            "target": "packages/core/src/git/diff.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e36",
+            "source": "packages/core/src/plugins/built-in/typescript.ts",
+            "target": "packages/core/src/plugins/types.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e37",
+            "source": "packages/core/src/plugins/built-in/typescript.ts",
+            "target": "packages/core/src/parser/parser.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e38",
+            "source": "packages/core/src/plugins/built-in/python.ts",
+            "target": "packages/core/src/plugins/types.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e39",
+            "source": "packages/core/src/plugins/built-in/python.ts",
+            "target": "packages/core/src/parser/parser.ts",
+            "isBroken": false
+          }
+        ],
+        "timestamp": 1770452098700
+      }
+    }
+  ]
+}
