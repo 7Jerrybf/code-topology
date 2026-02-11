@@ -147,6 +147,12 @@ code-topology/
 │   │       ├── reporter/  # 報告生成 (Markdown/JSON)
 │   │       ├── plugins/   # 語言插件系統 + built-in plugins
 │   │       └── analyze.ts # 高階分析 API (AST + Semantic 雙引擎)
+│   ├── mcp/               # @topology/mcp - MCP Server (Model Context Protocol for AI agents)
+│   │   └── src/
+│   │       ├── index.ts   # bin entry: McpServer + stdio transport
+│   │       ├── state.ts   # TopologyState: 快取分析結果
+│   │       ├── tools.ts   # 6 個 MCP tools (analyze, dependencies, impact, etc.)
+│   │       └── resources.ts # 3 個 MCP resources (graph, stats, node)
 │   ├── server/            # @topology/server - L3: WebSocket 伺服器, 檔案監視
 │   └── web/               # @topology/web - L4: Next.js + React Flow + elkjs 視覺化
 ├── cli/                   # @topology/cli - 薄殼 CLI (commander → core + server)
@@ -157,7 +163,7 @@ code-topology/
 └── CLAUDE.md
 ```
 
-**Build DAG**: `protocol` → `core` → `server` → `cli` / `web`
+**Build DAG**: `protocol` → `core` → `server` / `mcp` → `cli` / `web`
 
 **關鍵技術**:
 - **佈局引擎**: elkjs (取代 dagre)
@@ -166,6 +172,7 @@ code-topology/
 - **插件系統**: LanguagePlugin interface + pluginRegistry
 - **向量引擎**: onnxruntime-node + Xenova/all-MiniLM-L6-v2 (384 維, int8 量化)
 - **本地緩存**: better-sqlite3 (ParseCache + EmbeddingCache)
+- **MCP Server**: @modelcontextprotocol/sdk (stdio transport, 6 tools + 3 resources)
 
 ---
 
@@ -199,7 +206,12 @@ code-topology/
 
 ### Phase 3: The "Arbiter" (Agent Interaction)
 
-* [ ] 實作 MCP Server：讓 Cursor/Claude 可以讀取拓撲圖數據。
+* [x] **MCP Server** (`@topology/mcp`): 實作 Model Context Protocol 伺服器，讓 Cursor/Claude Desktop 直接查詢拓撲圖。
+  * Stdio transport（零網路開銷）
+  * 3 Resources: `topology://graph`、`topology://stats`、`topology://node/{filePath}`
+  * 6 Tools: `analyze`、`get_dependencies`、`get_broken_edges`、`find_similar_files`、`get_file_impact`、`generate_report`
+  * TopologyState 快取管理（首次呼叫觸發分析，後續讀快取）
+  * BFS 依賴鏈搜尋（正向/反向，可設定深度）
 * [ ] 實作「衝突預警」：當兩個 Git 分支修改了語義相近的節點時，UI 發出警報。
 * [ ] 推出 Docker Image，支援團隊私有化部署。
 
