@@ -4,6 +4,7 @@
  */
 
 export {
+  type LinkType,
   type NodeType,
   type DiffStatus,
   type Language,

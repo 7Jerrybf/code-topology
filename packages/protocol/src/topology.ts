@@ -27,6 +27,14 @@ export const NodeStatusSchema = z.enum(['STABLE', 'DRAFT', 'CONFLICT', 'DEPRECAT
 export type NodeStatus = z.infer<typeof NodeStatusSchema>;
 
 // ============================================
+// Link Types (Dual-Engine: AST + Vector)
+// ============================================
+
+/** Edge link type: 'dependency' (AST hard link) or 'semantic' (vector soft link) */
+export const LinkTypeSchema = z.enum(['dependency', 'semantic']);
+export type LinkType = z.infer<typeof LinkTypeSchema>;
+
+// ============================================
 // Core Graph Schemas
 // ============================================
 
@@ -55,6 +63,10 @@ export const TopologyEdgeSchema = z.object({
   target: z.string(),
   /** True if target changed signature but source didn't update */
   isBroken: z.boolean(),
+  /** Link type: 'dependency' (AST) or 'semantic' (vector similarity) */
+  linkType: LinkTypeSchema.default('dependency'),
+  /** Cosine similarity score (only for semantic edges) */
+  similarity: z.number().optional(),
 });
 export type TopologyEdge = z.infer<typeof TopologyEdgeSchema>;
 

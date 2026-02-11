@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { TopologySnapshot } from '@/types/topology';
-import type { WsMessage } from '@topology/protocol';
+import type { WsMessage, GitEvent } from '@topology/protocol';
 
 export type WsConnectionStatus = 'disconnected' | 'connecting' | 'connected';
 
@@ -18,6 +18,8 @@ export interface UseWebSocketUpdatesOptions {
   onSnapshot: (snapshot: TopologySnapshot) => void;
   /** Callback when an error is received */
   onError?: (error: string) => void;
+  /** Callback when a git event is received */
+  onGitEvent?: (event: GitEvent) => void;
   /** Reconnect interval in ms (default: 3000, max: 30000) */
   reconnectInterval?: number;
 }
@@ -41,7 +43,7 @@ const RECONNECT_BACKOFF_MULTIPLIER = 1.5;
 export function useWebSocketUpdates(
   options: UseWebSocketUpdatesOptions
 ): UseWebSocketUpdatesResult {
-  const { url, enabled, onSnapshot, onError, reconnectInterval = 3000 } = options;
+  const { url, enabled, onSnapshot, onError, onGitEvent, reconnectInterval = 3000 } = options;
 
   const [connectionStatus, setConnectionStatus] = useState<WsConnectionStatus>('disconnected');
   const [isReconnecting, setIsReconnecting] = useState(false);
@@ -132,6 +134,12 @@ export function useWebSocketUpdates(
               }
               break;
 
+            case 'git_event':
+              if (message.gitEvent) {
+                onGitEvent?.(message.gitEvent);
+              }
+              break;
+
             case 'connected':
               // Initial connection acknowledgment
               break;
@@ -166,7 +174,7 @@ export function useWebSocketUpdates(
         scheduleReconnect();
       }
     }
-  }, [url, enabled, onSnapshot, onError, reconnectInterval, cleanup, scheduleReconnect]);
+  }, [url, enabled, onSnapshot, onError, onGitEvent, reconnectInterval, cleanup, scheduleReconnect]);
 
   // Main effect - handle enabled state changes
   useEffect(() => {

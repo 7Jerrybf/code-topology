@@ -24,6 +24,8 @@ export default function Home() {
     highlightedNodeIds,
     selectedNodeId,
     selectNode,
+    showSemanticEdges,
+    toggleSemanticEdges,
     liveUpdatesEnabled,
     setWsConnectionStatus,
     addLiveSnapshot,
@@ -45,9 +47,17 @@ export default function Home() {
     setWsConnectionStatus(connectionStatus);
   }, [connectionStatus, setWsConnectionStatus]);
 
-  // Get current graph from store
+  // Get current graph from store (filter semantic edges if toggled off)
   const currentSnapshot = snapshots[currentIndex];
-  const graphData = currentSnapshot?.graph || null;
+  const rawGraphData = currentSnapshot?.graph || null;
+  const graphData = rawGraphData
+    ? {
+        ...rawGraphData,
+        edges: showSemanticEdges
+          ? rawGraphData.edges
+          : rawGraphData.edges.filter(e => e.linkType !== 'semantic'),
+      }
+    : null;
   const metadata = currentSnapshot?.metadata;
 
   // Local state for sidebar display (separate from search selection)
@@ -144,7 +154,21 @@ export default function Home() {
           {graphData && (
             <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
               <span>{graphData.nodes.length} files</span>
-              <span>{graphData.edges.length} dependencies</span>
+              <span>{graphData.edges.filter(e => e.linkType !== 'semantic').length} deps</span>
+              {graphData.edges.some(e => e.linkType === 'semantic') && (
+                <button
+                  onClick={toggleSemanticEdges}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                    showSemanticEdges
+                      ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                  }`}
+                  title="Toggle semantic edges"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                  {graphData.edges.filter(e => e.linkType === 'semantic').length} semantic
+                </button>
+              )}
               {snapshots.length > 1 && (
                 <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                   <History className="w-4 h-4" />
@@ -204,6 +228,22 @@ export default function Home() {
                 <LegendItem icon={Wrench} color="bg-amber-50 dark:bg-amber-900/30 border-amber-400 dark:border-amber-500" label="Utility" />
               </div>
               <hr className="my-4 border-slate-200 dark:border-slate-700" />
+              <h2 className="font-medium text-slate-700 dark:text-slate-200 mb-3">Edges</h2>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0.5 bg-slate-400" />
+                  <span className="text-slate-600 dark:text-slate-300">Dependency</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0.5 border-t-2 border-dashed border-red-500" />
+                  <span className="text-slate-600 dark:text-slate-300">Broken</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0.5 border-t-2 border-dashed border-violet-500" />
+                  <span className="text-slate-600 dark:text-slate-300">Semantic</span>
+                </div>
+              </div>
+              <hr className="my-4 border-slate-200 dark:border-slate-700" />
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Click on a node to see its details and dependencies.
               </p>
@@ -252,8 +292,11 @@ function NodeDetails({
   node: TopologyNode;
   edges: TopologyGraphData['edges'];
 }) {
-  const imports = edges.filter((e) => e.source === node.id);
-  const importedBy = edges.filter((e) => e.target === node.id);
+  const imports = edges.filter((e) => e.source === node.id && e.linkType !== 'semantic');
+  const importedBy = edges.filter((e) => e.target === node.id && e.linkType !== 'semantic');
+  const similarFiles = edges.filter(
+    (e) => e.linkType === 'semantic' && (e.source === node.id || e.target === node.id)
+  );
 
   const typeConfig = {
     FILE: { icon: FileCode, label: 'File', color: 'text-slate-600 dark:text-slate-400' },
@@ -333,6 +376,34 @@ function NodeDetails({
           <p className="text-sm text-slate-400 dark:text-slate-500 italic">Not imported anywhere</p>
         )}
       </div>
+
+      {/* Similar Files (Semantic edges) */}
+      {similarFiles.length > 0 && (
+        <>
+          <hr className="my-4 border-slate-200 dark:border-slate-700" />
+          <div>
+            <h3 className="text-sm font-medium text-violet-600 dark:text-violet-400 mb-2">
+              Similar Files ({similarFiles.length})
+            </h3>
+            <ul className="space-y-1">
+              {similarFiles.map((edge) => {
+                const otherFile = edge.source === node.id ? edge.target : edge.source;
+                return (
+                  <li key={edge.id} className="text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                    <span className="truncate flex-1">{otherFile}</span>
+                    {edge.similarity != null && (
+                      <span className="text-xs text-violet-500 dark:text-violet-400 font-mono">
+                        {(edge.similarity * 100).toFixed(0)}%
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </>
+      )}
     </div>
   );
 }

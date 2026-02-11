@@ -4,7 +4,7 @@
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
-import type { TopologySnapshot, WsMessage } from '@topology/protocol';
+import type { TopologySnapshot, WsMessage, GitEvent } from '@topology/protocol';
 
 export interface TopologyWsServerOptions {
   /** Port to listen on (default: 8765) */
@@ -117,6 +117,19 @@ export class TopologyWsServer {
     };
     this.broadcast(message);
     console.log(`   Broadcast snapshot to ${this.clients.size} client(s)`);
+  }
+
+  /**
+   * Broadcast a git event to all clients
+   */
+  broadcastGitEvent(gitEvent: GitEvent): void {
+    const message: WsMessage = {
+      type: 'git_event',
+      gitEvent,
+      timestamp: Date.now(),
+    };
+    this.broadcast(message);
+    console.log(`   Broadcast git_event (${gitEvent.eventType}) to ${this.clients.size} client(s)`);
   }
 
   /**

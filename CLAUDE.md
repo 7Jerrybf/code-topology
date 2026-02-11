@@ -61,6 +61,7 @@
 ### 3.2 關鍵依賴
 
 * **Parsing**: `tree-sitter` (支援多語言擴展的關鍵)。
+* **Git**: `isomorphic-git` (純 JS Git 操作，無原生 git 依賴)。
 * **Graph**: `graphology` (圖算法庫), `elkjs` (佈局算法)。
 * **Vector**: `chromadb` (本地開發) / `pinecone` (雲端適配)。
 * **Agent Interface**: `langchain` / `model-context-protocol` (MCP, 讓 Claude/ChatGPT 能直接操作拓撲圖)。
@@ -141,9 +142,11 @@ code-topology/
 │   │       ├── parser/    # Tree-sitter 多語言解析 (TS/JS/Python)
 │   │       ├── graph/     # 拓撲圖構建 & 快照管理
 │   │       ├── git/       # Git 差異分析
+│   │       ├── cache/     # SQLite 緩存 (ParseCache + EmbeddingCache)
+│   │       ├── embedding/ # 本地向量嵌入 (ONNX Runtime + BERT tokenizer)
 │   │       ├── reporter/  # 報告生成 (Markdown/JSON)
 │   │       ├── plugins/   # 語言插件系統 + built-in plugins
-│   │       └── analyze.ts # 高階分析 API
+│   │       └── analyze.ts # 高階分析 API (AST + Semantic 雙引擎)
 │   ├── server/            # @topology/server - L3: WebSocket 伺服器, 檔案監視
 │   └── web/               # @topology/web - L4: Next.js + React Flow + elkjs 視覺化
 ├── cli/                   # @topology/cli - 薄殼 CLI (commander → core + server)
@@ -161,6 +164,8 @@ code-topology/
 - **Schema 驗證**: Zod (runtime validation)
 - **構建工具**: Turborepo (增量構建緩存)
 - **插件系統**: LanguagePlugin interface + pluginRegistry
+- **向量引擎**: onnxruntime-node + Xenova/all-MiniLM-L6-v2 (384 維, int8 量化)
+- **本地緩存**: better-sqlite3 (ParseCache + EmbeddingCache)
 
 ---
 
@@ -176,11 +181,21 @@ code-topology/
 * [x] 基礎插件系統 (LanguagePlugin interface)。
 * [x] CLI 工具：analyze（生成 JSON）+ watch（即時更新）+ report（Markdown/JSON）。
 
-### Phase 2: The "Monitor" (Dual Engine Integration)
+### Phase 2: The "Monitor" (Dual Engine Integration) ✅
 
-* [ ] 接入 `isomorphic-git` 實時監聽文件變動。
-* [ ] 實作 SQLite 本地緩存，儲存圖結構。
-* [ ] **Vector Integration**: 實作本地 Embedding 生成 (使用 ONNX Runtime 跑小模型)，實現「語義關聯」虛線。
+* [x] 接入 `isomorphic-git` 取代 `simple-git`，消除原生 git CLI 依賴。
+* [x] 實作 `GitWatcher`：監聽 `.git/` 目錄偵測 commit、branch switch、merge、rebase 等事件。
+* [x] 新增 `git_event` WebSocket 訊息類型，前後端完整串接。
+* [x] 修復副檔名過濾 bug：`isTypeScriptFile()` → `isSupportedFile()`，支援所有 7 種副檔名。
+* [x] 實作 SQLite 本地緩存（`CacheDb` + `ParseCache`），儲存解析結果與 embedding 向量。
+* [x] **Vector Integration**: 實作本地 Embedding 生成（`onnxruntime-node` + `Xenova/all-MiniLM-L6-v2` 量化模型），實現「語義關聯」紫色虛線。
+  * 純 TypeScript BERT WordPiece tokenizer（無外部依賴）
+  * 自動從 HuggingFace 下載模型至 `.topology/models/`
+  * Mean pooling + L2 normalization → 384 維向量
+  * 餘弦相似度 > 0.7 且無直接 import 關係時產生語義邊
+  * EmbeddingCache（SQLite）支援增量更新
+  * CLI: `--no-embeddings` / `--similarity-threshold`
+  * Web UI: 紫色虛線渲染 + toggle 開關 + sidebar Similar Files
 
 ### Phase 3: The "Arbiter" (Agent Interaction)
 

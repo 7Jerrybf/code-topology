@@ -60,9 +60,28 @@ export {
   type LanguagePlugin,
 } from './plugins/index.js';
 
+// Cache module
+export {
+  CacheDb,
+  ParseCache,
+  simpleHash,
+  type CacheStats,
+} from './cache/index.js';
+
+// Embedding module
+export {
+  Embedder,
+  EmbeddingCache,
+  ModelManager,
+  cosineSimilarity,
+  findSemanticEdges,
+  type SemanticEdge,
+} from './embedding/index.js';
+
 // Re-export protocol types for convenience
 export type {
   Language,
+  LinkType,
   NodeType,
   DiffStatus,
   TopologyNode,

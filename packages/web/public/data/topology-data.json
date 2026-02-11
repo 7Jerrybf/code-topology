@@ -4,14 +4,14 @@
   "snapshots": [
     {
       "metadata": {
-        "timestamp": 1770452098700,
-        "commitHash": "4c900b8",
-        "commitMessage": "feat: implement Phase 6 Developer Ecosystem integration",
+        "timestamp": 1770735690333,
+        "commitHash": "c2d408c",
+        "commitMessage": "fix(ci): use Turborepo build order; update README and CONTRIBUTING",
         "branch": "main",
         "label": null,
-        "nodeCount": 58,
-        "edgeCount": 40,
-        "changedCount": 26,
+        "nodeCount": 59,
+        "edgeCount": 43,
+        "changedCount": 10,
         "brokenCount": 0
       },
       "graph": {
@@ -44,7 +44,7 @@
             "id": "cli/src/types.ts",
             "label": "types.ts",
             "type": "FILE",
-            "status": "MODIFIED",
+            "status": "UNCHANGED",
             "astSignature": "47fb5771",
             "language": "typescript"
           },
@@ -60,23 +60,23 @@
             "id": "packages/server/src/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "ADDED",
-            "astSignature": "6bb2d2d3",
+            "status": "MODIFIED",
+            "astSignature": "62b19298",
             "language": "typescript"
           },
           {
             "id": "packages/protocol/src/websocket.ts",
             "label": "websocket.ts",
             "type": "FILE",
-            "status": "ADDED",
-            "astSignature": "5496e726",
+            "status": "MODIFIED",
+            "astSignature": "69aa8aba",
             "language": "typescript"
           },
           {
             "id": "packages/protocol/src/topology.ts",
             "label": "topology.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "64a3bbce",
             "language": "typescript"
           },
@@ -84,7 +84,7 @@
             "id": "packages/protocol/src/intent.ts",
             "label": "intent.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "305179cc",
             "language": "typescript"
           },
@@ -92,15 +92,15 @@
             "id": "packages/protocol/src/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "ADDED",
-            "astSignature": "0d22461b",
+            "status": "MODIFIED",
+            "astSignature": "4001cb63",
             "language": "typescript"
           },
           {
             "id": "packages/protocol/src/explain.ts",
             "label": "explain.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "4a9f40ea",
             "language": "typescript"
           },
@@ -108,7 +108,7 @@
             "id": "packages/core/src/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "70914084",
             "language": "typescript"
           },
@@ -116,7 +116,7 @@
             "id": "packages/core/src/analyze.ts",
             "label": "analyze.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "5e5a10cc",
             "language": "typescript"
           },
@@ -124,7 +124,7 @@
             "id": "cli/src/watcher/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "MODIFIED",
+            "status": "UNCHANGED",
             "astSignature": "6bb2d2d3",
             "language": "typescript"
           },
@@ -132,7 +132,7 @@
             "id": "cli/src/reporter/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "MODIFIED",
+            "status": "UNCHANGED",
             "astSignature": "325473d6",
             "language": "typescript"
           },
@@ -140,7 +140,7 @@
             "id": "cli/src/git/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "MODIFIED",
+            "status": "UNCHANGED",
             "astSignature": "1dadd085",
             "language": "typescript"
           },
@@ -148,7 +148,7 @@
             "id": "cli/src/analyzer/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "MODIFIED",
+            "status": "UNCHANGED",
             "astSignature": "7bb54cc4",
             "language": "typescript"
           },
@@ -156,7 +156,7 @@
             "id": "packages/web/src/types/topology.ts",
             "label": "topology.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "47fb5771",
             "language": "typescript"
           },
@@ -164,8 +164,16 @@
             "id": "packages/web/src/types/explain.ts",
             "label": "explain.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "36f7399a",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/web/src/stores/topologyStore.ts",
+            "label": "topologyStore.ts",
+            "type": "FILE",
+            "status": "UNCHANGED",
+            "astSignature": "43d8373e",
             "language": "typescript"
           },
           {
@@ -180,7 +188,7 @@
             "id": "packages/web/src/lib/ai.ts",
             "label": "ai.ts",
             "type": "UTILITY",
-            "status": "UNCHANGED",
+            "status": "MODIFIED",
             "astSignature": "49053fb2",
             "language": "typescript"
           },
@@ -188,16 +196,8 @@
             "id": "packages/web/src/hooks/useWebSocketUpdates.ts",
             "label": "useWebSocketUpdates.ts",
             "type": "FILE",
-            "status": "UNCHANGED",
+            "status": "MODIFIED",
             "astSignature": "664c8d23",
-            "language": "typescript"
-          },
-          {
-            "id": "packages/web/src/stores/topologyStore.ts",
-            "label": "topologyStore.ts",
-            "type": "FILE",
-            "status": "UNCHANGED",
-            "astSignature": "43d8373e",
             "language": "typescript"
           },
           {
@@ -212,7 +212,7 @@
             "id": "packages/web/src/components/TopologyGraph.tsx",
             "label": "TopologyGraph.tsx",
             "type": "COMPONENT",
-            "status": "MODIFIED",
+            "status": "UNCHANGED",
             "astSignature": "044c28cd",
             "language": "typescript"
           },
@@ -284,7 +284,7 @@
             "id": "packages/server/src/watcher/wsServer.ts",
             "label": "wsServer.ts",
             "type": "FILE",
-            "status": "UNCHANGED",
+            "status": "MODIFIED",
             "astSignature": "09ed9293",
             "language": "typescript"
           },
@@ -292,8 +292,16 @@
             "id": "packages/server/src/watcher/index.ts",
             "label": "index.ts",
             "type": "FILE",
+            "status": "MODIFIED",
+            "astSignature": "62b19298",
+            "language": "typescript"
+          },
+          {
+            "id": "packages/server/src/watcher/gitWatcher.ts",
+            "label": "gitWatcher.ts",
+            "type": "FILE",
             "status": "ADDED",
-            "astSignature": "6bb2d2d3",
+            "astSignature": "42fb7c8a",
             "language": "typescript"
           },
           {
@@ -308,7 +316,7 @@
             "id": "packages/core/src/reporter/reporter.ts",
             "label": "reporter.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "41548db6",
             "language": "typescript"
           },
@@ -316,7 +324,7 @@
             "id": "packages/core/src/reporter/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "325473d6",
             "language": "typescript"
           },
@@ -348,7 +356,7 @@
             "id": "packages/core/src/parser/parser.ts",
             "label": "parser.ts",
             "type": "FILE",
-            "status": "MODIFIED",
+            "status": "UNCHANGED",
             "astSignature": "3b8e346f",
             "language": "typescript"
           },
@@ -356,7 +364,7 @@
             "id": "packages/core/src/parser/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "049c74e9",
             "language": "typescript"
           },
@@ -364,7 +372,7 @@
             "id": "packages/core/src/graph/snapshot.ts",
             "label": "snapshot.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "3124de98",
             "language": "typescript"
           },
@@ -372,7 +380,7 @@
             "id": "packages/core/src/graph/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "64d17966",
             "language": "typescript"
           },
@@ -380,7 +388,7 @@
             "id": "packages/core/src/graph/builder.ts",
             "label": "builder.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "0b02fa8e",
             "language": "typescript"
           },
@@ -388,7 +396,7 @@
             "id": "packages/core/src/git/index.ts",
             "label": "index.ts",
             "type": "FILE",
-            "status": "ADDED",
+            "status": "UNCHANGED",
             "astSignature": "1dadd085",
             "language": "typescript"
           },
@@ -396,7 +404,7 @@
             "id": "packages/core/src/git/diff.ts",
             "label": "diff.ts",
             "type": "FILE",
-            "status": "UNCHANGED",
+            "status": "MODIFIED",
             "astSignature": "0943d1fc",
             "language": "typescript"
           },
@@ -496,234 +504,252 @@
           },
           {
             "id": "e2",
-            "source": "packages/protocol/src/websocket.ts",
-            "target": "packages/protocol/src/topology.ts",
+            "source": "packages/server/src/index.ts",
+            "target": "packages/server/src/watcher/index.ts",
             "isBroken": false
           },
           {
             "id": "e3",
-            "source": "packages/protocol/src/index.ts",
+            "source": "packages/protocol/src/websocket.ts",
             "target": "packages/protocol/src/topology.ts",
             "isBroken": false
           },
           {
             "id": "e4",
             "source": "packages/protocol/src/index.ts",
-            "target": "packages/protocol/src/explain.ts",
+            "target": "packages/protocol/src/topology.ts",
             "isBroken": false
           },
           {
             "id": "e5",
             "source": "packages/protocol/src/index.ts",
-            "target": "packages/protocol/src/websocket.ts",
+            "target": "packages/protocol/src/explain.ts",
             "isBroken": false
           },
           {
             "id": "e6",
             "source": "packages/protocol/src/index.ts",
-            "target": "packages/protocol/src/intent.ts",
+            "target": "packages/protocol/src/websocket.ts",
             "isBroken": false
           },
           {
             "id": "e7",
-            "source": "packages/core/src/index.ts",
-            "target": "packages/core/src/analyze.ts",
+            "source": "packages/protocol/src/index.ts",
+            "target": "packages/protocol/src/intent.ts",
             "isBroken": false
           },
           {
             "id": "e8",
             "source": "packages/core/src/index.ts",
-            "target": "packages/core/src/parser/index.ts",
+            "target": "packages/core/src/analyze.ts",
             "isBroken": false
           },
           {
             "id": "e9",
             "source": "packages/core/src/index.ts",
-            "target": "packages/core/src/git/index.ts",
+            "target": "packages/core/src/parser/index.ts",
             "isBroken": false
           },
           {
             "id": "e10",
             "source": "packages/core/src/index.ts",
-            "target": "packages/core/src/graph/index.ts",
+            "target": "packages/core/src/git/index.ts",
             "isBroken": false
           },
           {
             "id": "e11",
             "source": "packages/core/src/index.ts",
-            "target": "packages/core/src/reporter/index.ts",
+            "target": "packages/core/src/graph/index.ts",
             "isBroken": false
           },
           {
             "id": "e12",
             "source": "packages/core/src/index.ts",
-            "target": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/reporter/index.ts",
             "isBroken": false
           },
           {
             "id": "e13",
-            "source": "packages/core/src/analyze.ts",
-            "target": "packages/core/src/parser/index.ts",
+            "source": "packages/core/src/index.ts",
+            "target": "packages/core/src/plugins/index.ts",
             "isBroken": false
           },
           {
             "id": "e14",
             "source": "packages/core/src/analyze.ts",
-            "target": "packages/core/src/git/index.ts",
+            "target": "packages/core/src/parser/index.ts",
             "isBroken": false
           },
           {
             "id": "e15",
             "source": "packages/core/src/analyze.ts",
-            "target": "packages/core/src/graph/index.ts",
+            "target": "packages/core/src/git/index.ts",
             "isBroken": false
           },
           {
             "id": "e16",
+            "source": "packages/core/src/analyze.ts",
+            "target": "packages/core/src/graph/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e17",
             "source": "packages/web/src/components/TopologyGraph.tsx",
             "target": "packages/web/src/components/TopologyNode.tsx",
             "isBroken": false
           },
           {
-            "id": "e17",
+            "id": "e18",
             "source": "packages/server/src/watcher/index.ts",
             "target": "packages/server/src/watcher/fileWatcher.ts",
             "isBroken": false
           },
           {
-            "id": "e18",
+            "id": "e19",
+            "source": "packages/server/src/watcher/index.ts",
+            "target": "packages/server/src/watcher/gitWatcher.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e20",
             "source": "packages/server/src/watcher/index.ts",
             "target": "packages/server/src/watcher/wsServer.ts",
             "isBroken": false
           },
           {
-            "id": "e19",
+            "id": "e21",
             "source": "packages/core/src/reporter/index.ts",
             "target": "packages/core/src/reporter/reporter.ts",
             "isBroken": false
           },
           {
-            "id": "e20",
-            "source": "packages/core/src/plugins/registry.ts",
-            "target": "packages/core/src/plugins/types.ts",
-            "isBroken": false
-          },
-          {
-            "id": "e21",
-            "source": "packages/core/src/plugins/index.ts",
-            "target": "packages/core/src/plugins/registry.ts",
-            "isBroken": false
-          },
-          {
             "id": "e22",
-            "source": "packages/core/src/plugins/index.ts",
+            "source": "packages/core/src/plugins/registry.ts",
             "target": "packages/core/src/plugins/types.ts",
             "isBroken": false
           },
           {
             "id": "e23",
             "source": "packages/core/src/plugins/index.ts",
-            "target": "packages/core/src/plugins/built-in/typescript.ts",
+            "target": "packages/core/src/plugins/registry.ts",
             "isBroken": false
           },
           {
             "id": "e24",
             "source": "packages/core/src/plugins/index.ts",
-            "target": "packages/core/src/plugins/built-in/python.ts",
+            "target": "packages/core/src/plugins/types.ts",
             "isBroken": false
           },
           {
             "id": "e25",
             "source": "packages/core/src/plugins/index.ts",
-            "target": "packages/core/src/plugins/registry.ts",
+            "target": "packages/core/src/plugins/built-in/typescript.ts",
             "isBroken": false
           },
           {
             "id": "e26",
             "source": "packages/core/src/plugins/index.ts",
-            "target": "packages/core/src/plugins/built-in/typescript.ts",
+            "target": "packages/core/src/plugins/built-in/python.ts",
             "isBroken": false
           },
           {
             "id": "e27",
             "source": "packages/core/src/plugins/index.ts",
-            "target": "packages/core/src/plugins/built-in/python.ts",
+            "target": "packages/core/src/plugins/registry.ts",
             "isBroken": false
           },
           {
             "id": "e28",
+            "source": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/plugins/built-in/typescript.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e29",
+            "source": "packages/core/src/plugins/index.ts",
+            "target": "packages/core/src/plugins/built-in/python.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e30",
             "source": "packages/core/src/parser/index.ts",
             "target": "packages/core/src/parser/parser.ts",
             "isBroken": false
           },
           {
-            "id": "e29",
+            "id": "e31",
             "source": "packages/core/src/graph/snapshot.ts",
             "target": "packages/core/src/git/index.ts",
             "isBroken": false
           },
           {
-            "id": "e30",
+            "id": "e32",
             "source": "packages/core/src/graph/index.ts",
             "target": "packages/core/src/graph/builder.ts",
             "isBroken": false
           },
           {
-            "id": "e31",
+            "id": "e33",
             "source": "packages/core/src/graph/index.ts",
             "target": "packages/core/src/graph/snapshot.ts",
             "isBroken": false
           },
           {
-            "id": "e32",
-            "source": "packages/core/src/graph/builder.ts",
-            "target": "packages/core/src/parser/index.ts",
-            "isBroken": false
-          },
-          {
-            "id": "e33",
-            "source": "packages/core/src/graph/builder.ts",
-            "target": "packages/core/src/parser/index.ts",
-            "isBroken": false
-          },
-          {
             "id": "e34",
+            "source": "packages/core/src/graph/builder.ts",
+            "target": "packages/core/src/parser/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e35",
+            "source": "packages/core/src/graph/builder.ts",
+            "target": "packages/core/src/parser/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e36",
             "source": "packages/core/src/graph/builder.ts",
             "target": "packages/core/src/git/index.ts",
             "isBroken": false
           },
           {
-            "id": "e35",
+            "id": "e37",
             "source": "packages/core/src/git/index.ts",
             "target": "packages/core/src/git/diff.ts",
             "isBroken": false
           },
           {
-            "id": "e36",
+            "id": "e38",
+            "source": "packages/core/src/git/diff.ts",
+            "target": "packages/core/src/parser/index.ts",
+            "isBroken": false
+          },
+          {
+            "id": "e39",
             "source": "packages/core/src/plugins/built-in/typescript.ts",
             "target": "packages/core/src/plugins/types.ts",
             "isBroken": false
           },
           {
-            "id": "e37",
+            "id": "e40",
             "source": "packages/core/src/plugins/built-in/typescript.ts",
             "target": "packages/core/src/parser/parser.ts",
             "isBroken": false
           },
           {
-            "id": "e38",
+            "id": "e41",
             "source": "packages/core/src/plugins/built-in/python.ts",
             "target": "packages/core/src/plugins/types.ts",
             "isBroken": false
           },
           {
-            "id": "e39",
+            "id": "e42",
             "source": "packages/core/src/plugins/built-in/python.ts",
             "target": "packages/core/src/parser/parser.ts",
             "isBroken": false
           }
         ],
-        "timestamp": 1770452098700
+        "timestamp": 1770735690333
       }
     }
   ]

@@ -5,7 +5,8 @@ import { mkdir, writeFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { analyzeDirectory, saveTopologyData, createSnapshot } from '@topology/core';
 import { generateReport, type ReportFormat } from '@topology/core/reporter';
-import { FileWatcher, TopologyWsServer } from '@topology/server';
+import { FileWatcher, GitWatcher, TopologyWsServer } from '@topology/server';
+import type { GitWatcherEvent } from '@topology/server';
 
 const program = new Command();
 
@@ -27,6 +28,10 @@ program
   .option('--report <format>', 'Generate report (markdown|json)')
   .option('--output-report <file>', 'Output report to file')
   .option('--fail-on-broken <n>', 'Exit with error if broken edges exceed threshold', '-1')
+  .option('--no-cache', 'Disable SQLite parse cache')
+  .option('--cache-dir <path>', 'Custom cache directory (default: <repo>/.topology/)')
+  .option('--no-embeddings', 'Disable semantic embedding analysis')
+  .option('--similarity-threshold <n>', 'Cosine similarity threshold for semantic edges', '0.7')
   .action(async (path: string, options: {
     output: string;
     base?: string;
@@ -37,6 +42,10 @@ program
     report?: string;
     outputReport?: string;
     failOnBroken: string;
+    cache: boolean;
+    cacheDir?: string;
+    embeddings: boolean;
+    similarityThreshold: string;
   }) => {
     console.log(`\n🔍 Code Topology Analyzer\n`);
 
@@ -47,6 +56,10 @@ program
       const graph = await analyzeDirectory(path, {
         baseBranch: options.base,
         skipGitDiff: !options.git,
+        noCache: !options.cache,
+        cacheDir: options.cacheDir,
+        noEmbeddings: !options.embeddings,
+        similarityThreshold: parseFloat(options.similarityThreshold),
       });
 
       // Ensure output directory exists
@@ -67,9 +80,15 @@ program
       const deletedCount = graph.nodes.filter(n => n.status === 'DELETED').length;
       const brokenCount = graph.edges.filter(e => e.isBroken).length;
 
+      const semanticEdgeCount = graph.edges.filter(e => e.linkType === 'semantic').length;
+      const depEdgeCount = graph.edges.length - semanticEdgeCount;
+
       console.log(`\n✅ Topology data written to: ${outputPath}`);
       console.log(`   - Nodes: ${graph.nodes.length}`);
-      console.log(`   - Edges: ${graph.edges.length}`);
+      console.log(`   - Dependency edges: ${depEdgeCount}`);
+      if (semanticEdgeCount > 0) {
+        console.log(`   - Semantic edges: ${semanticEdgeCount}`);
+      }
 
       if (options.history) {
         console.log(`   - Snapshots: ${dataFile.snapshots.length}`);
@@ -136,12 +155,20 @@ program
   .option('-o, --output <file>', 'Output JSON file path', './packages/web/public/data/topology-data.json')
   .option('-b, --base <branch>', 'Base branch to compare against')
   .option('--no-git', 'Skip git diff analysis')
+  .option('--no-cache', 'Disable SQLite parse cache')
+  .option('--cache-dir <path>', 'Custom cache directory (default: <repo>/.topology/)')
+  .option('--no-embeddings', 'Disable semantic embedding analysis')
+  .option('--similarity-threshold <n>', 'Cosine similarity threshold for semantic edges', '0.7')
   .action(async (path: string, options: {
     port: string;
     debounce: string;
     output: string;
     base?: string;
     git: boolean;
+    cache: boolean;
+    cacheDir?: string;
+    embeddings: boolean;
+    similarityThreshold: string;
   }) => {
     console.log(`\n👁️  Code Topology Watch Mode\n`);
 
@@ -156,17 +183,35 @@ program
       debounceMs,
     });
 
+    // Create git watcher
+    const gitWatcher = new GitWatcher({
+      path: absolutePath,
+    });
+
     // Create WebSocket server
     const wsServer = new TopologyWsServer({ port });
 
-    // Analysis function
+    // Lock to prevent concurrent analysis runs
+    let analysisInProgress = false;
+    let analysisPending = false;
+
+    // Analysis function with lock
     const runAnalysis = async () => {
+      if (analysisInProgress) {
+        analysisPending = true;
+        return;
+      }
+      analysisInProgress = true;
       try {
         console.log(`\n🔄 Running analysis...`);
 
         const graph = await analyzeDirectory(absolutePath, {
           baseBranch: options.base,
           skipGitDiff: !options.git,
+          noCache: !options.cache,
+          cacheDir: options.cacheDir,
+          noEmbeddings: !options.embeddings,
+          similarityThreshold: parseFloat(options.similarityThreshold),
         });
 
         // Save to file
@@ -192,6 +237,12 @@ program
       } catch (error) {
         console.error('❌ Analysis failed:', error);
         wsServer.broadcastError(error instanceof Error ? error.message : 'Analysis failed');
+      } finally {
+        analysisInProgress = false;
+        if (analysisPending) {
+          analysisPending = false;
+          await runAnalysis();
+        }
       }
     };
 
@@ -210,10 +261,29 @@ program
       await runAnalysis();
     });
 
+    // Handle git events
+    gitWatcher.on('git_event', async (event: GitWatcherEvent) => {
+      const details = event.previousBranch
+        ? `${event.previousBranch} → ${event.branch}`
+        : event.branch;
+      console.log(`\n🔀 Git event: ${event.eventType} (${details})`);
+
+      wsServer.broadcastGitEvent({
+        eventType: event.eventType,
+        branch: event.branch,
+        commitHash: event.commitHash,
+        previousBranch: event.previousBranch,
+        timestamp: event.timestamp,
+      });
+
+      await runAnalysis();
+    });
+
     // Graceful shutdown
     const shutdown = async () => {
       console.log('\n\n🛑 Shutting down...');
       await watcher.stop();
+      await gitWatcher.stop();
       await wsServer.stop();
       console.log('👋 Goodbye!\n');
       process.exit(0);
@@ -231,13 +301,19 @@ program
 
       // Start file watcher
       await watcher.start();
+
+      // Start git watcher
+      await gitWatcher.start();
+
       console.log(`\n👀 Watching: ${absolutePath}`);
       console.log(`   Debounce: ${debounceMs}ms`);
+      console.log(`   Git events: enabled`);
       console.log(`\n   Press Ctrl+C to stop\n`);
 
     } catch (error) {
       console.error('❌ Failed to start watch mode:', error);
       await watcher.stop();
+      await gitWatcher.stop();
       await wsServer.stop();
       process.exit(1);
     }

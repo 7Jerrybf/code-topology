@@ -14,6 +14,7 @@ import Python from 'tree-sitter-python';
 import { readFile } from 'fs/promises';
 import { extname } from 'path';
 import type { Language } from '@topology/protocol';
+import { simpleHash } from '../cache/contentHash.js';
 
 /** Represents a parsed import statement */
 export interface ParsedImport {
@@ -685,19 +686,3 @@ export function parseContentForExports(content: string, filePath: string): strin
   }
 }
 
-// ============================================
-// Utility Functions
-// ============================================
-
-/**
- * Simple string hash for content change detection
- */
-function simpleHash(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return Math.abs(hash).toString(16).padStart(8, '0');
-}

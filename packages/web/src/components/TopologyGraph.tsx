@@ -131,7 +131,9 @@ export function TopologyGraph({
 
       const baseStyle = edge.isBroken
         ? { stroke: '#ef4444', strokeWidth: 2, strokeDasharray: '5,5', cursor: 'pointer' }
-        : { stroke: '#94a3b8', strokeWidth: 1.5 };
+        : edge.linkType === 'semantic'
+          ? { stroke: '#8b5cf6', strokeWidth: 1, strokeDasharray: '4,4' }
+          : { stroke: '#94a3b8', strokeWidth: 1.5 };
 
       const fadeStyle = isEdgeFaded ? { opacity: 0.2 } : {};
       const highlightStyle = isEdgeHighlighted && !edge.isBroken
@@ -143,11 +145,11 @@ export function TopologyGraph({
         source: edge.source,
         target: edge.target,
         animated: edge.isBroken,
-        data: { isBroken: edge.isBroken },
+        data: { isBroken: edge.isBroken, linkType: edge.linkType, similarity: edge.similarity },
         style: { ...baseStyle, ...fadeStyle, ...highlightStyle },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: isEdgeHighlighted && !edge.isBroken ? '#3b82f6' : edge.isBroken ? '#ef4444' : '#94a3b8',
+          color: isEdgeHighlighted && !edge.isBroken ? '#3b82f6' : edge.isBroken ? '#ef4444' : edge.linkType === 'semantic' ? '#8b5cf6' : '#94a3b8',
           width: 20,
           height: 20,
         },

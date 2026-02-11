@@ -283,6 +283,7 @@ export async function buildGraph(
           source: file.filePath,
           target: targetPath,
           isBroken: isBroken || isTargetDeleted,
+          linkType: 'dependency',
         };
         edges.push(edge);
       }

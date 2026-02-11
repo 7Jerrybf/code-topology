@@ -7,6 +7,7 @@
 export {
   // Schemas
   LanguageSchema,
+  LinkTypeSchema,
   NodeTypeSchema,
   DiffStatusSchema,
   NodeKindSchema,
@@ -19,6 +20,7 @@ export {
   TopologyDataFileSchema,
   // Types
   type Language,
+  type LinkType,
   type NodeType,
   type DiffStatus,
   type NodeKind,
@@ -47,8 +49,12 @@ export {
 export {
   WsMessageTypeSchema,
   WsMessageSchema,
+  GitEventTypeSchema,
+  GitEventSchema,
   type WsMessageType,
   type WsMessage,
+  type GitEventType,
+  type GitEvent,
 } from './websocket.js';
 
 // Intent types (Phase 3 preparation)

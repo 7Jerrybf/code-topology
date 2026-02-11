@@ -39,6 +39,9 @@ interface TopologyStore {
   highlightedNodeIds: Set<string>;
   isSearchFocused: boolean;
 
+  // Semantic edge visibility
+  showSemanticEdges: boolean;
+
   // Live Updates state
   liveUpdatesEnabled: boolean;
   wsConnectionStatus: WsConnectionStatus;
@@ -59,6 +62,9 @@ interface TopologyStore {
   selectNode: (nodeId: string | null) => void;
   clearSearch: () => void;
   setSearchFocused: (focused: boolean) => void;
+
+  // Semantic edge toggle
+  toggleSemanticEdges: () => void;
 
   // Live Updates Actions
   setLiveUpdatesEnabled: (enabled: boolean) => void;
@@ -171,6 +177,9 @@ export const useTopologyStore = create<TopologyStore>((set, get) => ({
   selectedNodeId: null,
   highlightedNodeIds: new Set<string>(),
   isSearchFocused: false,
+
+  // Semantic edge initial state
+  showSemanticEdges: true,
 
   // Live Updates initial state
   liveUpdatesEnabled: false,
@@ -318,6 +327,11 @@ export const useTopologyStore = create<TopologyStore>((set, get) => ({
 
   setSearchFocused: (focused: boolean) => {
     set({ isSearchFocused: focused });
+  },
+
+  // Semantic edge toggle
+  toggleSemanticEdges: () => {
+    set((state) => ({ showSemanticEdges: !state.showSemanticEdges }));
   },
 
   // Live Updates Actions
