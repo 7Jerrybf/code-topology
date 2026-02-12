@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store/
+dist/
+.next/
+.turbo/
+.git/
+.env
+.env.local
+.env*.local
+*.log
+*.tsbuildinfo
+.vscode/
+.idea/
+.topology/
+.claude/
+nul

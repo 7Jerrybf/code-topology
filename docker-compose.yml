@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "${TOPOLOGY_PORT:-8765}:8765"
+    volumes:
+      - ${REPO_PATH:-.}:/repo:ro
+      - topology-cache:/data/.topology
+      - topology-output:/data/output
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - topology-output:/app/packages/web/public/data
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  topology-cache:   # SQLite cache + ONNX models
+  topology-output:  # topology-data.json (backend writes, web reads)

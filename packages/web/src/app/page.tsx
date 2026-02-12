@@ -6,12 +6,14 @@ import { ExplainModal } from '@/components/ExplainModal';
 import { TimelineSlider } from '@/components/TimelineSlider';
 import { SearchPanel } from '@/components/SearchPanel';
 import { LiveIndicator } from '@/components/LiveIndicator';
+import { ConflictPanel } from '@/components/ConflictPanel';
 import { useTopologyStore } from '@/stores/topologyStore';
 import { useWebSocketUpdates } from '@/hooks/useWebSocketUpdates';
-import type { TopologyNode, TopologyEdge, TopologyGraph as TopologyGraphData, TopologySnapshot } from '@/types/topology';
+import type { TopologyNode, TopologyEdge, TopologyGraph as TopologyGraphData, TopologySnapshot, ConflictWarning } from '@/types/topology';
 import type { ExplainResult, ExplainError } from '@/types/explain';
-import { FileCode, Component, Wrench, GitBranch, Clock, History } from 'lucide-react';
+import { FileCode, Component, Wrench, GitBranch, Clock, History, AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { getWebSocketUrl } from '@/lib/config';
 
 export default function Home() {
   // Use zustand store for topology data
@@ -26,6 +28,9 @@ export default function Home() {
     selectNode,
     showSemanticEdges,
     toggleSemanticEdges,
+    conflictWarnings,
+    setConflictWarnings,
+    clearConflictWarnings,
     liveUpdatesEnabled,
     setWsConnectionStatus,
     addLiveSnapshot,
@@ -36,10 +41,15 @@ export default function Home() {
     addLiveSnapshot(snapshot);
   }, [addLiveSnapshot]);
 
+  const handleConflictWarnings = useCallback((warnings: ConflictWarning[]) => {
+    setConflictWarnings(warnings);
+  }, [setConflictWarnings]);
+
   const { connectionStatus } = useWebSocketUpdates({
-    url: 'ws://localhost:8765',
+    url: getWebSocketUrl(),
     enabled: liveUpdatesEnabled,
     onSnapshot: handleLiveSnapshot,
+    onConflictWarnings: handleConflictWarnings,
   });
 
   // Sync connection status to store
@@ -181,6 +191,12 @@ export default function Home() {
               </span>
             </div>
           )}
+          {conflictWarnings.length > 0 && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 text-xs font-medium">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {conflictWarnings.length}
+            </div>
+          )}
           <LiveIndicator />
           <ThemeToggle />
         </div>
@@ -216,39 +232,54 @@ export default function Home() {
         </div>
 
         {/* Sidebar */}
-        <aside className="w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 overflow-y-auto">
-          {sidebarNode ? (
-            <NodeDetails node={sidebarNode} edges={graphData?.edges || []} />
-          ) : (
-            <div className="p-4">
-              <h2 className="font-medium text-slate-700 dark:text-slate-200 mb-3">Legend</h2>
-              <div className="space-y-2 text-sm">
-                <LegendItem icon={FileCode} color="bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-500" label="File" />
-                <LegendItem icon={Component} color="bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 dark:border-emerald-500" label="Component" />
-                <LegendItem icon={Wrench} color="bg-amber-50 dark:bg-amber-900/30 border-amber-400 dark:border-amber-500" label="Utility" />
+        <aside className="w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            {sidebarNode ? (
+              <NodeDetails node={sidebarNode} edges={graphData?.edges || []} />
+            ) : (
+              <div className="p-4">
+                <h2 className="font-medium text-slate-700 dark:text-slate-200 mb-3">Legend</h2>
+                <div className="space-y-2 text-sm">
+                  <LegendItem icon={FileCode} color="bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-500" label="File" />
+                  <LegendItem icon={Component} color="bg-emerald-50 dark:bg-emerald-900/30 border-emerald-400 dark:border-emerald-500" label="Component" />
+                  <LegendItem icon={Wrench} color="bg-amber-50 dark:bg-amber-900/30 border-amber-400 dark:border-amber-500" label="Utility" />
+                </div>
+                <hr className="my-4 border-slate-200 dark:border-slate-700" />
+                <h2 className="font-medium text-slate-700 dark:text-slate-200 mb-3">Edges</h2>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-0.5 bg-slate-400" />
+                    <span className="text-slate-600 dark:text-slate-300">Dependency</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-0.5 border-t-2 border-dashed border-red-500" />
+                    <span className="text-slate-600 dark:text-slate-300">Broken</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-0.5 border-t-2 border-dashed border-violet-500" />
+                    <span className="text-slate-600 dark:text-slate-300">Semantic</span>
+                  </div>
+                </div>
+                <hr className="my-4 border-slate-200 dark:border-slate-700" />
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Click on a node to see its details and dependencies.
+                </p>
               </div>
-              <hr className="my-4 border-slate-200 dark:border-slate-700" />
-              <h2 className="font-medium text-slate-700 dark:text-slate-200 mb-3">Edges</h2>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-0.5 bg-slate-400" />
-                  <span className="text-slate-600 dark:text-slate-300">Dependency</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-0.5 border-t-2 border-dashed border-red-500" />
-                  <span className="text-slate-600 dark:text-slate-300">Broken</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-0.5 border-t-2 border-dashed border-violet-500" />
-                  <span className="text-slate-600 dark:text-slate-300">Semantic</span>
-                </div>
-              </div>
-              <hr className="my-4 border-slate-200 dark:border-slate-700" />
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Click on a node to see its details and dependencies.
-              </p>
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Conflict Panel */}
+          <ConflictPanel
+            warnings={conflictWarnings}
+            onClear={clearConflictWarnings}
+            onFileClick={(fileId) => {
+              const node = graphData?.nodes.find((n) => n.id === fileId);
+              if (node) {
+                setSidebarNode(node);
+                selectNode(fileId);
+              }
+            }}
+          />
         </aside>
       </div>
 

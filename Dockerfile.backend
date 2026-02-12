@@ -1,0 +1,59 @@
+# ── Stage 1: base ─────────────────────────────────────────────
+FROM node:20-slim AS base
+# Use slim (Debian/glibc) — onnxruntime-node requires glibc, not musl
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+WORKDIR /app
+
+# ── Stage 2: build ────────────────────────────────────────────
+FROM base AS build
+
+# Native build tools for better-sqlite3, tree-sitter, onnxruntime-node
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
+# Copy workspace config first (layer cache)
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
+
+# Copy only the package.json files we need (backend: protocol, core, server, cli, mcp)
+COPY packages/protocol/package.json packages/protocol/package.json
+COPY packages/core/package.json packages/core/package.json
+COPY packages/server/package.json packages/server/package.json
+COPY packages/mcp/package.json packages/mcp/package.json
+COPY cli/package.json cli/package.json
+
+# Install all dependencies (including devDependencies for build)
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY packages/protocol/ packages/protocol/
+COPY packages/core/ packages/core/
+COPY packages/server/ packages/server/
+COPY cli/ cli/
+
+# Build in DAG order: protocol → core → server → cli
+RUN pnpm --filter @topology/protocol build && \
+    pnpm --filter @topology/core build && \
+    pnpm --filter @topology/server build && \
+    pnpm --filter @topology/cli build
+
+# ── Stage 3: production ──────────────────────────────────────
+FROM node:20-slim AS production
+
+# Runtime dep for onnxruntime-node
+RUN apt-get update && apt-get install -y libstdc++6 && rm -rf /var/lib/apt/lists/*
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+WORKDIR /app
+
+# Copy built artifacts + node_modules
+COPY --from=build /app ./
+
+# Prune dev dependencies to reduce image size
+RUN pnpm prune --prod || true
+
+# Create data directories
+RUN mkdir -p /data/.topology /data/output
+
+EXPOSE 8765
+
+ENTRYPOINT ["node", "cli/dist/index.js"]
+CMD ["watch", "/repo", "--port", "8765", "--output", "/data/output/topology-data.json", "--cache-dir", "/data/.topology"]

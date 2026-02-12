@@ -144,6 +144,7 @@ code-topology/
 │   │       ├── git/       # Git 差異分析
 │   │       ├── cache/     # SQLite 緩存 (ParseCache + EmbeddingCache)
 │   │       ├── embedding/ # 本地向量嵌入 (ONNX Runtime + BERT tokenizer)
+│   │       ├── conflict/  # 跨分支衝突偵測 (direct/dependency/semantic)
 │   │       ├── reporter/  # 報告生成 (Markdown/JSON)
 │   │       ├── plugins/   # 語言插件系統 + built-in plugins
 │   │       └── analyze.ts # 高階分析 API (AST + Semantic 雙引擎)
@@ -151,7 +152,7 @@ code-topology/
 │   │   └── src/
 │   │       ├── index.ts   # bin entry: McpServer + stdio transport
 │   │       ├── state.ts   # TopologyState: 快取分析結果
-│   │       ├── tools.ts   # 6 個 MCP tools (analyze, dependencies, impact, etc.)
+│   │       ├── tools.ts   # 7 個 MCP tools (analyze, dependencies, impact, conflicts, etc.)
 │   │       └── resources.ts # 3 個 MCP resources (graph, stats, node)
 │   ├── server/            # @topology/server - L3: WebSocket 伺服器, 檔案監視
 │   └── web/               # @topology/web - L4: Next.js + React Flow + elkjs 視覺化
@@ -172,7 +173,9 @@ code-topology/
 - **插件系統**: LanguagePlugin interface + pluginRegistry
 - **向量引擎**: onnxruntime-node + Xenova/all-MiniLM-L6-v2 (384 維, int8 量化)
 - **本地緩存**: better-sqlite3 (ParseCache + EmbeddingCache)
-- **MCP Server**: @modelcontextprotocol/sdk (stdio transport, 6 tools + 3 resources)
+- **MCP Server**: @modelcontextprotocol/sdk (stdio transport, 7 tools + 3 resources)
+- **衝突偵測**: isomorphic-git `walk()` + TREE 比較 OID (跨分支語義衝突)
+- **Docker 部署**: multi-stage build, Next.js standalone, docker-compose 編排
 
 ---
 
@@ -209,11 +212,22 @@ code-topology/
 * [x] **MCP Server** (`@topology/mcp`): 實作 Model Context Protocol 伺服器，讓 Cursor/Claude Desktop 直接查詢拓撲圖。
   * Stdio transport（零網路開銷）
   * 3 Resources: `topology://graph`、`topology://stats`、`topology://node/{filePath}`
-  * 6 Tools: `analyze`、`get_dependencies`、`get_broken_edges`、`find_similar_files`、`get_file_impact`、`generate_report`
+  * 7 Tools: `analyze`、`get_dependencies`、`get_broken_edges`、`find_similar_files`、`get_file_impact`、`generate_report`、`detect_conflicts`
   * TopologyState 快取管理（首次呼叫觸發分析，後續讀快取）
   * BFS 依賴鏈搜尋（正向/反向，可設定深度）
-* [ ] 實作「衝突預警」：當兩個 Git 分支修改了語義相近的節點時，UI 發出警報。
-* [ ] 推出 Docker Image，支援團隊私有化部署。
+* [x] **衝突預警**：當兩個 Git 分支修改了語義相近的節點時，UI 發出警報。
+  * 三層衝突偵測：direct（同檔案）> dependency（依賴邊）> semantic（語義邊）
+  * `git.walk()` + TREE OID 比較，O(N) 效能跨分支 diff
+  * Watch mode 自動偵測：git 事件後非同步執行衝突掃描
+  * WebSocket `conflict_warning` 訊息類型，即時推送到前端
+  * Web UI: ConflictPanel 面板 + header 紅色 badge + 點擊 highlight 節點
+  * MCP Tool: `detect_conflicts`，AI Agent 可直接查詢衝突狀態
+* [x] **Docker Image**：推出 Docker Image，支援團隊私有化部署。
+  * `Dockerfile.backend`：multi-stage build（node:20-slim），CLI watch + WebSocket server
+  * `Dockerfile.web`：multi-stage build，Next.js standalone output（alpine runtime）
+  * `docker-compose.yml`：backend + web 編排，bind mount repo，volume 持久化 cache/output
+  * 環境變數：`REPO_PATH`、`TOPOLOGY_PORT`、`WEB_PORT`、`NEXT_PUBLIC_WS_URL`
+  * 一行啟動：`REPO_PATH=/path/to/repo docker compose up`
 
 ### Phase 4: The "Governor" (Enterprise/SaaS)
 

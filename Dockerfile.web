@@ -1,0 +1,54 @@
+# ── Stage 1: base ─────────────────────────────────────────────
+FROM node:20-slim AS base
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+WORKDIR /app
+
+# ── Stage 2: build ────────────────────────────────────────────
+FROM base AS build
+
+# Build tools needed because transpilePackages includes @topology/core (native deps)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
+# Copy workspace config first (layer cache)
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.base.json ./
+
+# Copy only the package.json files we need (web: protocol, core, web, mcp for lockfile)
+COPY packages/protocol/package.json packages/protocol/package.json
+COPY packages/core/package.json packages/core/package.json
+COPY packages/mcp/package.json packages/mcp/package.json
+COPY packages/web/package.json packages/web/package.json
+
+# Install all dependencies
+RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY packages/protocol/ packages/protocol/
+COPY packages/core/ packages/core/
+COPY packages/web/ packages/web/
+
+# Enable standalone output for Docker deployment
+ENV NEXT_OUTPUT_STANDALONE=1
+
+# Build in DAG order: protocol → core → web (Next.js standalone)
+RUN pnpm --filter @topology/protocol build && \
+    pnpm --filter @topology/core build && \
+    pnpm --filter @topology/web build
+
+# ── Stage 3: production ──────────────────────────────────────
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+# Copy Next.js standalone output
+COPY --from=build /app/packages/web/.next/standalone ./
+COPY --from=build /app/packages/web/.next/static ./packages/web/.next/static
+COPY --from=build /app/packages/web/public ./packages/web/public
+
+# Create data directory for topology output volume mount
+RUN mkdir -p packages/web/public/data
+
+EXPOSE 3000
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+
+CMD ["node", "packages/web/server.js"]
