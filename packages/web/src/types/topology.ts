@@ -14,4 +14,5 @@ export {
   type SnapshotMetadata,
   type TopologySnapshot,
   type TopologyDataFile,
+  type ConflictWarning,
 } from '@topology/protocol';

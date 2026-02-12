@@ -34,6 +34,10 @@
     "./embedding": {
       "types": "./dist/embedding/index.d.ts",
       "import": "./dist/embedding/index.js"
+    },
+    "./conflict": {
+      "types": "./dist/conflict/index.d.ts",
+      "import": "./dist/conflict/index.js"
     }
   },
   "scripts": {

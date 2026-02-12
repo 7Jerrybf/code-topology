@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { generateReport } from '@topology/core';
+import { generateReport, detectConflicts } from '@topology/core';
 import type { TopologyEdge } from '@topology/protocol';
 import type { TopologyState } from './state.js';
 
@@ -205,6 +205,56 @@ export function registerTools(server: McpServer, state: TopologyState): void {
           {
             type: 'text' as const,
             text: report,
+          },
+        ],
+      };
+    },
+  );
+
+  // Tool 7: detect_conflicts — Cross-branch conflict detection
+  server.tool(
+    'detect_conflicts',
+    'Detect potential conflicts between the current branch and other local branches. Finds direct (same file), dependency (linked files), and semantic (similar files) conflicts.',
+    {
+      baseBranch: z.string().optional().describe('Base branch to compare against (default: auto-detect main/master)'),
+    },
+    async ({ baseBranch }) => {
+      const graph = await state.ensureGraph();
+      const repoPath = state.getAnalyzePath();
+
+      const warnings = await detectConflicts({
+        repoPath,
+        graph,
+        baseBranch,
+      });
+
+      if (warnings.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: 'No cross-branch conflicts detected.',
+            },
+          ],
+        };
+      }
+
+      const highCount = warnings.filter((w) => w.severity === 'high').length;
+      const mediumCount = warnings.filter((w) => w.severity === 'medium').length;
+      const lowCount = warnings.filter((w) => w.severity === 'low').length;
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: [
+              `Found ${warnings.length} potential conflict(s):`,
+              `  Direct (same file): ${highCount}`,
+              `  Dependency (linked): ${mediumCount}`,
+              `  Semantic (similar): ${lowCount}`,
+              '',
+              JSON.stringify(warnings, null, 2),
+            ].join('\n'),
           },
         ],
       };

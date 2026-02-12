@@ -3,7 +3,7 @@
 import { Command } from 'commander';
 import { mkdir, writeFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
-import { analyzeDirectory, saveTopologyData, createSnapshot } from '@topology/core';
+import { analyzeDirectory, saveTopologyData, createSnapshot, detectConflicts, type TopologyGraph } from '@topology/core';
 import { generateReport, type ReportFormat } from '@topology/core/reporter';
 import { FileWatcher, GitWatcher, TopologyWsServer } from '@topology/server';
 import type { GitWatcherEvent } from '@topology/server';
@@ -195,6 +195,38 @@ program
     let analysisInProgress = false;
     let analysisPending = false;
 
+    // Run conflict detection asynchronously after analysis
+    const runConflictDetection = async (graph: TopologyGraph) => {
+      try {
+        const warnings = await detectConflicts({
+          repoPath: absolutePath,
+          graph,
+          baseBranch: options.base,
+        });
+
+        if (warnings.length > 0) {
+          const highCount = warnings.filter(w => w.severity === 'high').length;
+          const mediumCount = warnings.filter(w => w.severity === 'medium').length;
+          const lowCount = warnings.filter(w => w.severity === 'low').length;
+
+          const parts = [];
+          if (highCount > 0) parts.push(`${highCount} direct`);
+          if (mediumCount > 0) parts.push(`${mediumCount} dependency`);
+          if (lowCount > 0) parts.push(`${lowCount} semantic`);
+
+          console.log(`\n🔴 Conflict warnings: ${parts.join(', ')}`);
+          for (const w of warnings) {
+            const icon = w.severity === 'high' ? '🔴' : w.severity === 'medium' ? '🟠' : '🟡';
+            console.log(`   ${icon} [${w.otherBranch}] ${w.description}`);
+          }
+
+          wsServer.broadcastConflictWarnings(warnings);
+        }
+      } catch (error) {
+        console.warn('⚠️  Conflict detection failed:', error instanceof Error ? error.message : error);
+      }
+    };
+
     // Analysis function with lock
     const runAnalysis = async () => {
       if (analysisInProgress) {
@@ -234,6 +266,9 @@ program
         if (brokenCount > 0) {
           console.log(`⚠️  Potentially broken dependencies: ${brokenCount}`);
         }
+
+        // Run conflict detection asynchronously (non-blocking)
+        runConflictDetection(graph);
       } catch (error) {
         console.error('❌ Analysis failed:', error);
         wsServer.broadcastError(error instanceof Error ? error.message : 'Analysis failed');

@@ -4,7 +4,7 @@
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
-import type { TopologySnapshot, WsMessage, GitEvent } from '@topology/protocol';
+import type { TopologySnapshot, WsMessage, GitEvent, ConflictWarning } from '@topology/protocol';
 
 export interface TopologyWsServerOptions {
   /** Port to listen on (default: 8765) */
@@ -130,6 +130,20 @@ export class TopologyWsServer {
     };
     this.broadcast(message);
     console.log(`   Broadcast git_event (${gitEvent.eventType}) to ${this.clients.size} client(s)`);
+  }
+
+  /**
+   * Broadcast conflict warnings to all clients
+   */
+  broadcastConflictWarnings(warnings: ConflictWarning[]): void {
+    if (warnings.length === 0) return;
+    const message: WsMessage = {
+      type: 'conflict_warning',
+      conflictWarnings: warnings,
+      timestamp: Date.now(),
+    };
+    this.broadcast(message);
+    console.log(`   Broadcast ${warnings.length} conflict warning(s) to ${this.clients.size} client(s)`);
   }
 
   /**

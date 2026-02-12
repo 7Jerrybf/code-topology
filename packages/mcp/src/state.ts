@@ -40,4 +40,8 @@ export class TopologyState {
   getGraph(): TopologyGraph | null {
     return this.graph;
   }
+
+  getAnalyzePath(): string {
+    return this.analyzePath;
+  }
 }

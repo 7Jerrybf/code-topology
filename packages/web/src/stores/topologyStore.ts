@@ -13,6 +13,7 @@ import type {
   NodeType,
   DiffStatus,
   Language,
+  ConflictWarning,
 } from '@/types/topology';
 
 /** WebSocket connection status */
@@ -42,6 +43,9 @@ interface TopologyStore {
   // Semantic edge visibility
   showSemanticEdges: boolean;
 
+  // Conflict warnings
+  conflictWarnings: ConflictWarning[];
+
   // Live Updates state
   liveUpdatesEnabled: boolean;
   wsConnectionStatus: WsConnectionStatus;
@@ -65,6 +69,10 @@ interface TopologyStore {
 
   // Semantic edge toggle
   toggleSemanticEdges: () => void;
+
+  // Conflict warning actions
+  setConflictWarnings: (warnings: ConflictWarning[]) => void;
+  clearConflictWarnings: () => void;
 
   // Live Updates Actions
   setLiveUpdatesEnabled: (enabled: boolean) => void;
@@ -180,6 +188,9 @@ export const useTopologyStore = create<TopologyStore>((set, get) => ({
 
   // Semantic edge initial state
   showSemanticEdges: true,
+
+  // Conflict warnings initial state
+  conflictWarnings: [],
 
   // Live Updates initial state
   liveUpdatesEnabled: false,
@@ -332,6 +343,15 @@ export const useTopologyStore = create<TopologyStore>((set, get) => ({
   // Semantic edge toggle
   toggleSemanticEdges: () => {
     set((state) => ({ showSemanticEdges: !state.showSemanticEdges }));
+  },
+
+  // Conflict warning actions
+  setConflictWarnings: (warnings: ConflictWarning[]) => {
+    set({ conflictWarnings: warnings });
+  },
+
+  clearConflictWarnings: () => {
+    set({ conflictWarnings: [] });
   },
 
   // Live Updates Actions

@@ -64,3 +64,13 @@ export {
   type Intent,
   type ArbitrationRequest,
 } from './intent.js';
+
+// Conflict Warning types (Phase 3: cross-branch semantic conflict detection)
+export {
+  ConflictTypeSchema,
+  ConflictSeveritySchema,
+  ConflictWarningSchema,
+  type ConflictType,
+  type ConflictSeverity,
+  type ConflictWarning,
+} from './conflict.js';

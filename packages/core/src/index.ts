@@ -78,6 +78,14 @@ export {
   type SemanticEdge,
 } from './embedding/index.js';
 
+// Conflict detection module
+export {
+  detectConflicts,
+  listOtherBranches,
+  getBranchModifiedFiles,
+  type DetectConflictsOptions,
+} from './conflict/index.js';
+
 // Re-export protocol types for convenience
 export type {
   Language,
@@ -90,4 +98,7 @@ export type {
   SnapshotMetadata,
   TopologySnapshot,
   TopologyDataFile,
+  ConflictType,
+  ConflictSeverity,
+  ConflictWarning,
 } from '@topology/protocol';
