@@ -6,7 +6,7 @@
 import { glob } from 'glob';
 import { readFile } from 'fs/promises';
 import { resolve, join } from 'path';
-import type { TopologyGraph, Language } from '@topology/protocol';
+import type { TopologyGraph, Language, VectorStoreConfig } from '@topology/protocol';
 import {
   parseFileContent,
   detectLanguage,
@@ -22,6 +22,10 @@ import { ModelManager } from './embedding/modelManager.js';
 import { Embedder } from './embedding/embedder.js';
 import { EmbeddingCache } from './embedding/embeddingCache.js';
 import { findSemanticEdges } from './embedding/similarity.js';
+import type { VectorStore, VectorRecord } from './embedding/vectorStore.js';
+import { createVectorStore } from './embedding/stores/index.js';
+import { syncToCloud } from './embedding/cloudSync.js';
+import { findSemanticEdgesCloud } from './embedding/cloudSearch.js';
 
 export interface AnalyzeOptions {
   /** Base branch to compare against (default: auto-detect main/master) */
@@ -38,6 +42,8 @@ export interface AnalyzeOptions {
   similarityThreshold?: number;
   /** Maximum semantic edges per file (default: 3) */
   maxSemanticEdgesPerFile?: number;
+  /** Cloud vector store configuration (default: sqlite-only, no cloud sync) */
+  vectorStoreConfig?: VectorStoreConfig;
 }
 
 /**
@@ -291,17 +297,58 @@ export async function analyzeDirectory(
         }
       }
 
+      // --- Cloud Vector Sync ---
+      const vectorCfg = options.vectorStoreConfig;
+      let cloudStore: VectorStore | null = null;
+      if (vectorCfg && vectorCfg.provider !== 'sqlite' && vectorCfg.sync.enabled) {
+        try {
+          cloudStore = await createVectorStore(vectorCfg, cacheDb ?? undefined);
+
+          // Build VectorRecords from newly embedded files
+          const cloudRecords: VectorRecord[] = newEmbeddings.map((e) => ({
+            id: e.filePath,
+            embedding: e.embedding,
+            metadata: {
+              contentHash: e.contentHash,
+              modelId: e.modelId,
+              updatedAt: Date.now(),
+            },
+          }));
+
+          const syncResult = await syncToCloud(
+            cloudStore,
+            cloudRecords,
+            new Set(fileContents.keys()),
+            vectorCfg.sync.batchSize,
+          );
+
+          console.log(
+            `\u2601\uFE0F  Cloud sync (${vectorCfg.provider}): ${syncResult.upserted} upserted, ${syncResult.pruned} pruned (${syncResult.durationMs}ms)`,
+          );
+        } catch (err) {
+          console.warn(`\u26A0\uFE0F  Cloud sync failed: ${(err as Error).message}`);
+        }
+      }
+
       // Build existing edge set for filtering
       const existingEdgeSet = new Set<string>();
       for (const edge of graph.edges) {
         existingEdgeSet.add(`${edge.source}\u2192${edge.target}`);
       }
 
-      // Find semantic edges
-      const semanticEdges = findSemanticEdges(embeddings, existingEdgeSet, {
-        threshold: similarityThreshold,
-        maxPerFile,
-      });
+      // Find semantic edges — use cloud search if configured, otherwise brute-force
+      let semanticEdges;
+      if (vectorCfg?.sync.useCloudSearch && cloudStore) {
+        semanticEdges = await findSemanticEdgesCloud(cloudStore, embeddings, existingEdgeSet, {
+          threshold: similarityThreshold,
+          maxPerFile,
+        });
+      } else {
+        semanticEdges = findSemanticEdges(embeddings, existingEdgeSet, {
+          threshold: similarityThreshold,
+          maxPerFile,
+        });
+      }
 
       // Append semantic edges to graph
       for (const se of semanticEdges) {
@@ -315,9 +362,15 @@ export async function analyzeDirectory(
         });
       }
 
-      console.log(`\u{1F52E} Semantic: ${semanticEdges.length} edges found (threshold: ${similarityThreshold})`);
+      const searchMode = vectorCfg?.sync.useCloudSearch && cloudStore ? 'cloud' : 'local';
+      console.log(`\u{1F52E} Semantic: ${semanticEdges.length} edges found (threshold: ${similarityThreshold}, search: ${searchMode})`);
       if (useCache) {
         console.log(`   Embedding cache: ${embCacheHits} hits, ${embCacheMisses} misses`);
+      }
+
+      // Clean up cloud store
+      if (cloudStore) {
+        await cloudStore.close();
       }
 
       embedder.dispose();

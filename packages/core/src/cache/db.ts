@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync, existsSync, unlinkSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 4;
 
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL);
@@ -30,6 +30,58 @@ CREATE TABLE IF NOT EXISTS embeddings (
   model_id       TEXT    NOT NULL,
   cached_at      INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS auth_config (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+INSERT OR IGNORE INTO auth_config (key, value) VALUES ('enabled', 'false');
+
+CREATE TABLE IF NOT EXISTS users (
+  id            TEXT    PRIMARY KEY,
+  username      TEXT    NOT NULL UNIQUE,
+  display_name  TEXT,
+  password_hash TEXT,
+  role          TEXT    NOT NULL DEFAULT 'viewer',
+  enabled       INTEGER NOT NULL DEFAULT 1,
+  created_at    INTEGER NOT NULL,
+  updated_at    INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+  id             TEXT    PRIMARY KEY,
+  user_id        TEXT    NOT NULL REFERENCES users(id),
+  key_hash       TEXT    NOT NULL UNIQUE,
+  label          TEXT    NOT NULL,
+  scope_override TEXT,
+  last_used_at   INTEGER,
+  expires_at     INTEGER,
+  created_at     INTEGER NOT NULL,
+  revoked        INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys (key_hash);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  timestamp   INTEGER NOT NULL,
+  action      TEXT    NOT NULL,
+  severity    TEXT    DEFAULT 'info',
+  user_id     TEXT,
+  username    TEXT,
+  source      TEXT    NOT NULL,
+  success     INTEGER DEFAULT 1,
+  details     TEXT,
+  duration_ms INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log (timestamp);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log (action);
+
+CREATE TABLE IF NOT EXISTS vector_sync_state (
+  file_path     TEXT NOT NULL PRIMARY KEY,
+  content_hash  TEXT NOT NULL,
+  provider      TEXT NOT NULL,
+  synced_at     INTEGER NOT NULL
+);
 `;
 
 const MIGRATION_V1_TO_V2 = `
@@ -41,6 +93,66 @@ CREATE TABLE IF NOT EXISTS embeddings (
   cached_at      INTEGER NOT NULL
 );
 UPDATE schema_version SET version = 2;
+`;
+
+const MIGRATION_V2_TO_V3 = `
+CREATE TABLE IF NOT EXISTS auth_config (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+INSERT OR IGNORE INTO auth_config (key, value) VALUES ('enabled', 'false');
+
+CREATE TABLE IF NOT EXISTS users (
+  id            TEXT    PRIMARY KEY,
+  username      TEXT    NOT NULL UNIQUE,
+  display_name  TEXT,
+  password_hash TEXT,
+  role          TEXT    NOT NULL DEFAULT 'viewer',
+  enabled       INTEGER NOT NULL DEFAULT 1,
+  created_at    INTEGER NOT NULL,
+  updated_at    INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+  id             TEXT    PRIMARY KEY,
+  user_id        TEXT    NOT NULL REFERENCES users(id),
+  key_hash       TEXT    NOT NULL UNIQUE,
+  label          TEXT    NOT NULL,
+  scope_override TEXT,
+  last_used_at   INTEGER,
+  expires_at     INTEGER,
+  created_at     INTEGER NOT NULL,
+  revoked        INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys (key_hash);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  timestamp   INTEGER NOT NULL,
+  action      TEXT    NOT NULL,
+  severity    TEXT    DEFAULT 'info',
+  user_id     TEXT,
+  username    TEXT,
+  source      TEXT    NOT NULL,
+  success     INTEGER DEFAULT 1,
+  details     TEXT,
+  duration_ms INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log (timestamp);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log (action);
+
+UPDATE schema_version SET version = 3;
+`;
+
+const MIGRATION_V3_TO_V4 = `
+CREATE TABLE IF NOT EXISTS vector_sync_state (
+  file_path     TEXT NOT NULL PRIMARY KEY,
+  content_hash  TEXT NOT NULL,
+  provider      TEXT NOT NULL,
+  synced_at     INTEGER NOT NULL
+);
+
+UPDATE schema_version SET version = 4;
 `;
 
 export class CacheDb {
@@ -137,6 +249,12 @@ export class CacheDb {
         // Run incremental migrations
         if (currentVersion < 2) {
           this.db.exec(MIGRATION_V1_TO_V2);
+        }
+        if (currentVersion < 3) {
+          this.db.exec(MIGRATION_V2_TO_V3);
+        }
+        if (currentVersion < 4) {
+          this.db.exec(MIGRATION_V3_TO_V4);
         }
       }
     } catch (err) {

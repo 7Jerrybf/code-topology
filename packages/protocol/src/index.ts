@@ -74,3 +74,47 @@ export {
   type ConflictSeverity,
   type ConflictWarning,
 } from './conflict.js';
+
+// Auth types (Phase 4: RBAC)
+export {
+  RoleSchema,
+  PermissionSchema,
+  UserSchema,
+  ApiKeySchema,
+  AuthContextSchema,
+  AuthConfigSchema,
+  type Role,
+  type Permission,
+  type User,
+  type ApiKey,
+  type AuthContext,
+  type AuthConfig,
+} from './auth.js';
+
+// Audit types (Phase 4: Audit Logging)
+export {
+  AuditActionSchema,
+  AuditSeveritySchema,
+  AuditLogEntrySchema,
+  AuditQuerySchema,
+  AuditRetentionSchema,
+  type AuditAction,
+  type AuditSeverity,
+  type AuditLogEntry,
+  type AuditQuery,
+  type AuditRetention,
+} from './audit.js';
+
+// Vector Store types (Phase 4: Cloud Vector DB)
+export {
+  VectorProviderSchema,
+  PineconeConfigSchema,
+  PgvectorConfigSchema,
+  VectorSyncConfigSchema,
+  VectorStoreConfigSchema,
+  type VectorProvider,
+  type PineconeConfig,
+  type PgvectorConfig,
+  type VectorSyncConfig,
+  type VectorStoreConfig,
+} from './vectorStore.js';

@@ -9,6 +9,18 @@ services:
       - ${REPO_PATH:-.}:/repo:ro
       - topology-cache:/data/.topology
       - topology-output:/data/output
+    environment:
+      - TOPOLOGY_AUTH_ENABLED=${TOPOLOGY_AUTH_ENABLED:-false}
+      - TOPOLOGY_ADMIN_KEY=${TOPOLOGY_ADMIN_KEY:-}
+      - TOPOLOGY_AUDIT_ENABLED=${TOPOLOGY_AUDIT_ENABLED:-false}
+      - TOPOLOGY_JWT_SECRET=${TOPOLOGY_JWT_SECRET:-}
+      - TOPOLOGY_VECTOR_PROVIDER=${TOPOLOGY_VECTOR_PROVIDER:-sqlite}
+      - TOPOLOGY_PINECONE_API_KEY=${TOPOLOGY_PINECONE_API_KEY:-}
+      - TOPOLOGY_PINECONE_INDEX=${TOPOLOGY_PINECONE_INDEX:-}
+      - TOPOLOGY_PINECONE_NAMESPACE=${TOPOLOGY_PINECONE_NAMESPACE:-}
+      - TOPOLOGY_PGVECTOR_URL=${TOPOLOGY_PGVECTOR_URL:-}
+      - TOPOLOGY_VECTOR_SYNC=${TOPOLOGY_VECTOR_SYNC:-true}
+      - TOPOLOGY_VECTOR_CLOUD_SEARCH=${TOPOLOGY_VECTOR_CLOUD_SEARCH:-false}
     restart: unless-stopped
 
   web:
@@ -18,7 +30,11 @@ services:
     ports:
       - "${WEB_PORT:-3000}:3000"
     volumes:
+      - topology-cache:/data/.topology
       - topology-output:/app/packages/web/public/data
+    environment:
+      - REPO_PATH=/data
+      - TOPOLOGY_AUDIT_ENABLED=${TOPOLOGY_AUDIT_ENABLED:-false}
     depends_on:
       - backend
     restart: unless-stopped

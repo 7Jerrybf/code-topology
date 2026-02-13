@@ -76,6 +76,18 @@ export {
   cosineSimilarity,
   findSemanticEdges,
   type SemanticEdge,
+  // Vector store abstractions (Phase 4: Cloud Vector DB)
+  type VectorStore,
+  type VectorRecord,
+  type SimilarResult,
+  type VectorRecordMetadata,
+  createVectorStore,
+  resolveVectorConfig,
+  type VectorConfigOverrides,
+  syncToCloud,
+  type CloudSyncResult,
+  findSemanticEdgesCloud,
+  type CloudSearchOptions,
 } from './embedding/index.js';
 
 // Conflict detection module
@@ -85,6 +97,27 @@ export {
   getBranchModifiedFiles,
   type DetectConflictsOptions,
 } from './conflict/index.js';
+
+// Auth module
+export {
+  AuthDb,
+  UserManager,
+  ApiKeyManager,
+  JwtManager,
+  resolveAuthContext,
+  createLocalAdminContext,
+  hasPermission,
+  getPermissionsForRole,
+  ROLE_PERMISSIONS,
+} from './auth/index.js';
+export type { UserRow, ApiKeyRow, CreateKeyResult, ResolveAuthOptions } from './auth/index.js';
+
+// Audit module
+export {
+  AuditLogger,
+  enforceRetention,
+} from './audit/index.js';
+export type { AuditLogInput } from './audit/index.js';
 
 // Re-export protocol types for convenience
 export type {
@@ -101,4 +134,7 @@ export type {
   ConflictType,
   ConflictSeverity,
   ConflictWarning,
+  VectorProvider,
+  VectorStoreConfig,
+  VectorSyncConfig,
 } from '@topology/protocol';

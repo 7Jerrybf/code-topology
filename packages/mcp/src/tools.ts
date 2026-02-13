@@ -1,10 +1,26 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { generateReport, detectConflicts } from '@topology/core';
+import { generateReport, detectConflicts, hasPermission } from '@topology/core';
 import type { TopologyEdge } from '@topology/protocol';
+import type { Permission } from '@topology/protocol';
 import type { TopologyState } from './state.js';
 
+function permDenied(permission: Permission) {
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: `Permission denied: requires "${permission}".`,
+      },
+    ],
+    isError: true,
+  };
+}
+
 export function registerTools(server: McpServer, state: TopologyState): void {
+  const ctx = state.authContext;
+  const audit = state.auditLogger;
+
   // Tool 1: analyze — Analyze the codebase
   server.tool(
     'analyze',
@@ -14,6 +30,11 @@ export function registerTools(server: McpServer, state: TopologyState): void {
       similarityThreshold: z.number().min(0).max(1).optional().describe('Cosine similarity threshold for semantic edges (default: 0.7)'),
     },
     async ({ noEmbeddings, similarityThreshold }) => {
+      if (ctx && !hasPermission(ctx, 'analysis:run')) return permDenied('analysis:run');
+
+      const start = Date.now();
+      audit?.log({ action: 'analysis:started', userId: ctx?.userId, username: ctx?.username, source: 'mcp' });
+
       const graph = await state.refresh({
         noEmbeddings,
         similarityThreshold,
@@ -22,6 +43,15 @@ export function registerTools(server: McpServer, state: TopologyState): void {
       const depEdges = graph.edges.filter((e) => e.linkType !== 'semantic');
       const semEdges = graph.edges.filter((e) => e.linkType === 'semantic');
       const brokenEdges = graph.edges.filter((e) => e.isBroken);
+
+      audit?.log({
+        action: 'analysis:completed',
+        userId: ctx?.userId,
+        username: ctx?.username,
+        source: 'mcp',
+        durationMs: Date.now() - start,
+        details: `nodes=${graph.nodes.length} edges=${graph.edges.length}`,
+      });
 
       return {
         content: [
@@ -51,6 +81,10 @@ export function registerTools(server: McpServer, state: TopologyState): void {
       depth: z.number().int().min(1).max(10).optional().describe('Max traversal depth (default: 1)'),
     },
     async ({ filePath, direction, depth }) => {
+      if (ctx && !hasPermission(ctx, 'graph:read')) return permDenied('graph:read');
+
+      audit?.log({ action: 'dependencies:read', userId: ctx?.userId, username: ctx?.username, source: 'mcp', details: filePath });
+
       const graph = await state.ensureGraph();
       const dir = direction ?? 'both';
       const maxDepth = depth ?? 1;
@@ -90,6 +124,10 @@ export function registerTools(server: McpServer, state: TopologyState): void {
     'List all broken dependencies in the codebase. A broken edge means the imported file has changed its signature or been deleted.',
     {},
     async () => {
+      if (ctx && !hasPermission(ctx, 'graph:read')) return permDenied('graph:read');
+
+      audit?.log({ action: 'broken_edges:read', userId: ctx?.userId, username: ctx?.username, source: 'mcp' });
+
       const graph = await state.ensureGraph();
       const broken = graph.edges
         .filter((e) => e.isBroken)
@@ -112,18 +150,61 @@ export function registerTools(server: McpServer, state: TopologyState): void {
     },
   );
 
-  // Tool 4: find_similar_files — Semantic search
+  // Tool 4: find_similar_files — Semantic search (enhanced with cloud vector support)
   server.tool(
     'find_similar_files',
-    'Find files that are semantically similar to a given file, based on code embeddings.',
+    'Find files that are semantically similar to a given file, based on code embeddings. Supports cloud vector search and cross-repo queries when configured.',
     {
       filePath: z.string().describe('File path to find similar files for'),
       limit: z.number().int().min(1).max(50).optional().describe('Max number of results (default: 10)'),
+      crossRepo: z.boolean().optional().describe('Search across all repos in the cloud index (requires cloud vector store)'),
     },
-    async ({ filePath, limit }) => {
+    async ({ filePath, limit, crossRepo }) => {
+      if (ctx && !hasPermission(ctx, 'graph:read')) return permDenied('graph:read');
+
+      audit?.log({ action: 'similar_files:read', userId: ctx?.userId, username: ctx?.username, source: 'mcp', details: filePath });
+
       const graph = await state.ensureGraph();
       const maxResults = limit ?? 10;
 
+      // Try cloud vector search if available
+      const cloudStore = await state.getCloudStore();
+      if (cloudStore) {
+        try {
+          // Get the file's embedding from the cloud store
+          const records = await cloudStore.fetch([filePath]);
+          if (records.length > 0) {
+            const vector = records[0]!.embedding;
+            // crossRepo=true → don't filter by namespace
+            const filter = crossRepo ? { namespace: '' } : undefined;
+            const results = await cloudStore.query(vector, maxResults + 1, filter);
+
+            const similar = results
+              .filter((r) => r.id !== filePath)
+              .slice(0, maxResults)
+              .map((r) => ({
+                file: r.id,
+                similarity: Math.round(r.score * 1000) / 1000,
+                ...(crossRepo && r.metadata?.repoId ? { repoId: r.metadata.repoId } : {}),
+              }));
+
+            return {
+              content: [
+                {
+                  type: 'text' as const,
+                  text: similar.length === 0
+                    ? `No similar files found for "${filePath}" via cloud search.`
+                    : JSON.stringify({ source: 'cloud', results: similar }, null, 2),
+                },
+              ],
+            };
+          }
+        } catch {
+          // Fallback to graph edges below
+        }
+      }
+
+      // Fallback: use pre-computed semantic edges from the graph
       const similar = graph.edges
         .filter(
           (e) =>
@@ -143,7 +224,7 @@ export function registerTools(server: McpServer, state: TopologyState): void {
             type: 'text' as const,
             text: similar.length === 0
               ? `No semantic edges found for "${filePath}". Run analyze with embeddings enabled first.`
-              : JSON.stringify(similar, null, 2),
+              : JSON.stringify({ source: 'graph', results: similar }, null, 2),
           },
         ],
       };
@@ -158,6 +239,10 @@ export function registerTools(server: McpServer, state: TopologyState): void {
       filePath: z.string().describe('File path to analyze impact for'),
     },
     async ({ filePath }) => {
+      if (ctx && !hasPermission(ctx, 'graph:read')) return permDenied('graph:read');
+
+      audit?.log({ action: 'file_impact:read', userId: ctx?.userId, username: ctx?.username, source: 'mcp', details: filePath });
+
       const graph = await state.ensureGraph();
       const impacted: Array<{ file: string; depth: number }> = [];
 
@@ -192,6 +277,10 @@ export function registerTools(server: McpServer, state: TopologyState): void {
       format: z.enum(['markdown', 'json']).optional().describe('Report format (default: "markdown")'),
     },
     async ({ format }) => {
+      if (ctx && !hasPermission(ctx, 'report:read')) return permDenied('report:read');
+
+      audit?.log({ action: 'report:generated', userId: ctx?.userId, username: ctx?.username, source: 'mcp' });
+
       const graph = await state.ensureGraph();
       const reportFormat = format ?? 'markdown';
 
@@ -219,6 +308,10 @@ export function registerTools(server: McpServer, state: TopologyState): void {
       baseBranch: z.string().optional().describe('Base branch to compare against (default: auto-detect main/master)'),
     },
     async ({ baseBranch }) => {
+      if (ctx && !hasPermission(ctx, 'conflicts:detect')) return permDenied('conflicts:detect');
+
+      audit?.log({ action: 'conflicts:detected', userId: ctx?.userId, username: ctx?.username, source: 'mcp' });
+
       const graph = await state.ensureGraph();
       const repoPath = state.getAnalyzePath();
 

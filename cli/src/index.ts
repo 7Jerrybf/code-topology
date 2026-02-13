@@ -3,10 +3,13 @@
 import { Command } from 'commander';
 import { mkdir, writeFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
-import { analyzeDirectory, saveTopologyData, createSnapshot, detectConflicts, type TopologyGraph } from '@topology/core';
+import { analyzeDirectory, saveTopologyData, createSnapshot, detectConflicts, resolveVectorConfig, type TopologyGraph } from '@topology/core';
 import { generateReport, type ReportFormat } from '@topology/core/reporter';
+import { CacheDb, AuthDb, UserManager, ApiKeyManager } from '@topology/core';
+import type { VectorStoreConfig } from '@topology/protocol';
 import { FileWatcher, GitWatcher, TopologyWsServer } from '@topology/server';
 import type { GitWatcherEvent } from '@topology/server';
+import type { Role } from '@topology/protocol';
 
 const program = new Command();
 
@@ -32,6 +35,13 @@ program
   .option('--cache-dir <path>', 'Custom cache directory (default: <repo>/.topology/)')
   .option('--no-embeddings', 'Disable semantic embedding analysis')
   .option('--similarity-threshold <n>', 'Cosine similarity threshold for semantic edges', '0.7')
+  .option('--vector-provider <provider>', 'Vector store provider: sqlite, pinecone, pgvector')
+  .option('--pinecone-api-key <key>', 'Pinecone API key')
+  .option('--pinecone-index <name>', 'Pinecone index name')
+  .option('--pinecone-namespace <ns>', 'Pinecone namespace')
+  .option('--pgvector-url <url>', 'pgvector connection string')
+  .option('--no-vector-sync', 'Disable cloud vector sync')
+  .option('--no-cloud-search', 'Disable cloud-based semantic search')
   .action(async (path: string, options: {
     output: string;
     base?: string;
@@ -46,11 +56,33 @@ program
     cacheDir?: string;
     embeddings: boolean;
     similarityThreshold: string;
+    vectorProvider?: string;
+    pineconeApiKey?: string;
+    pineconeIndex?: string;
+    pineconeNamespace?: string;
+    pgvectorUrl?: string;
+    vectorSync: boolean;
+    cloudSearch: boolean;
   }) => {
     console.log(`\n🔍 Code Topology Analyzer\n`);
 
     try {
       const absolutePath = resolve(path);
+
+      // Resolve vector store config from CLI flags + env vars
+      const vectorStoreConfig = resolveVectorConfig({
+        provider: options.vectorProvider as VectorStoreConfig['provider'] | undefined,
+        pinecone: options.pineconeApiKey && options.pineconeIndex
+          ? { apiKey: options.pineconeApiKey, indexName: options.pineconeIndex, namespace: options.pineconeNamespace }
+          : undefined,
+        pgvector: options.pgvectorUrl
+          ? { connectionString: options.pgvectorUrl }
+          : undefined,
+        sync: {
+          enabled: options.vectorSync,
+          useCloudSearch: options.cloudSearch,
+        },
+      });
 
       // Analyze the directory
       const graph = await analyzeDirectory(path, {
@@ -60,6 +92,7 @@ program
         cacheDir: options.cacheDir,
         noEmbeddings: !options.embeddings,
         similarityThreshold: parseFloat(options.similarityThreshold),
+        vectorStoreConfig,
       });
 
       // Ensure output directory exists
@@ -159,6 +192,13 @@ program
   .option('--cache-dir <path>', 'Custom cache directory (default: <repo>/.topology/)')
   .option('--no-embeddings', 'Disable semantic embedding analysis')
   .option('--similarity-threshold <n>', 'Cosine similarity threshold for semantic edges', '0.7')
+  .option('--vector-provider <provider>', 'Vector store provider: sqlite, pinecone, pgvector')
+  .option('--pinecone-api-key <key>', 'Pinecone API key')
+  .option('--pinecone-index <name>', 'Pinecone index name')
+  .option('--pinecone-namespace <ns>', 'Pinecone namespace')
+  .option('--pgvector-url <url>', 'pgvector connection string')
+  .option('--no-vector-sync', 'Disable cloud vector sync')
+  .option('--no-cloud-search', 'Disable cloud-based semantic search')
   .action(async (path: string, options: {
     port: string;
     debounce: string;
@@ -169,6 +209,13 @@ program
     cacheDir?: string;
     embeddings: boolean;
     similarityThreshold: string;
+    vectorProvider?: string;
+    pineconeApiKey?: string;
+    pineconeIndex?: string;
+    pineconeNamespace?: string;
+    pgvectorUrl?: string;
+    vectorSync: boolean;
+    cloudSearch: boolean;
   }) => {
     console.log(`\n👁️  Code Topology Watch Mode\n`);
 
@@ -176,6 +223,21 @@ program
     const port = parseInt(options.port, 10);
     const debounceMs = parseInt(options.debounce, 10);
     const outputPath = resolve(options.output);
+
+    // Resolve vector store config
+    const vectorStoreConfig = resolveVectorConfig({
+      provider: options.vectorProvider as VectorStoreConfig['provider'] | undefined,
+      pinecone: options.pineconeApiKey && options.pineconeIndex
+        ? { apiKey: options.pineconeApiKey, indexName: options.pineconeIndex, namespace: options.pineconeNamespace }
+        : undefined,
+      pgvector: options.pgvectorUrl
+        ? { connectionString: options.pgvectorUrl }
+        : undefined,
+      sync: {
+        enabled: options.vectorSync,
+        useCloudSearch: options.cloudSearch,
+      },
+    });
 
     // Create file watcher
     const watcher = new FileWatcher({
@@ -244,6 +306,7 @@ program
           cacheDir: options.cacheDir,
           noEmbeddings: !options.embeddings,
           similarityThreshold: parseFloat(options.similarityThreshold),
+          vectorStoreConfig,
         });
 
         // Save to file
@@ -351,6 +414,223 @@ program
       await gitWatcher.stop();
       await wsServer.stop();
       process.exit(1);
+    }
+  });
+
+// ── Auth subcommands ───────────────────────────────────────────
+
+const auth = program
+  .command('auth')
+  .description('Manage RBAC authentication (users, API keys)');
+
+/**
+ * Helper: open CacheDb + AuthDb for auth commands
+ */
+function openAuthDb(cacheDir?: string): { cacheDb: CacheDb; authDb: AuthDb } {
+  const repoRoot = resolve('.');
+  const cacheDb = new CacheDb(repoRoot, cacheDir);
+  cacheDb.open();
+  const authDb = new AuthDb(cacheDb.database);
+  return { cacheDb, authDb };
+}
+
+auth
+  .command('init')
+  .description('Enable RBAC, create initial admin user and API key')
+  .option('--cache-dir <path>', 'Custom cache directory')
+  .option('--password <pass>', 'Admin password (prompted if not given)', 'admin')
+  .action(async (options: { cacheDir?: string; password: string }) => {
+    const { cacheDb, authDb } = openAuthDb(options.cacheDir);
+    try {
+      if (authDb.isAuthEnabled()) {
+        console.log('Auth is already enabled.');
+        cacheDb.close();
+        return;
+      }
+
+      const userManager = new UserManager(authDb);
+      const apiKeyManager = new ApiKeyManager(authDb);
+
+      // Create admin user
+      const admin = await userManager.createUser({
+        username: 'admin',
+        password: options.password,
+        role: 'admin',
+      });
+
+      // Create first API key
+      const { rawKey } = apiKeyManager.create({
+        userId: admin.id,
+        label: 'initial-admin-key',
+      });
+
+      // Enable auth
+      authDb.setConfig('enabled', 'true');
+
+      console.log('\nRBAC enabled successfully!\n');
+      console.log(`  Admin user: admin`);
+      console.log(`  API Key:    ${rawKey}`);
+      console.log('\n  Save this API key — it cannot be retrieved later.\n');
+    } finally {
+      cacheDb.close();
+    }
+  });
+
+auth
+  .command('create-user')
+  .description('Create a new user')
+  .argument('<username>', 'Username')
+  .requiredOption('--role <role>', 'Role: admin, editor, or viewer')
+  .requiredOption('--password <pass>', 'User password')
+  .option('--cache-dir <path>', 'Custom cache directory')
+  .action(async (username: string, options: { role: string; password: string; cacheDir?: string }) => {
+    const { cacheDb, authDb } = openAuthDb(options.cacheDir);
+    try {
+      const userManager = new UserManager(authDb);
+      await userManager.createUser({
+        username,
+        password: options.password,
+        role: options.role as Role,
+      });
+      console.log(`User "${username}" created with role "${options.role}".`);
+    } finally {
+      cacheDb.close();
+    }
+  });
+
+auth
+  .command('list-users')
+  .description('List all users')
+  .option('--cache-dir <path>', 'Custom cache directory')
+  .action((options: { cacheDir?: string }) => {
+    const { cacheDb, authDb } = openAuthDb(options.cacheDir);
+    try {
+      const users = authDb.listUsers();
+      if (users.length === 0) {
+        console.log('No users found. Run `topology auth init` first.');
+        return;
+      }
+      console.log('\nUsers:\n');
+      for (const u of users) {
+        const status = u.enabled ? 'active' : 'disabled';
+        console.log(`  ${u.username}  role=${u.role}  status=${status}  id=${u.id}`);
+      }
+      console.log('');
+    } finally {
+      cacheDb.close();
+    }
+  });
+
+auth
+  .command('delete-user')
+  .description('Delete a user')
+  .argument('<username>', 'Username to delete')
+  .option('--cache-dir <path>', 'Custom cache directory')
+  .action((username: string, options: { cacheDir?: string }) => {
+    const { cacheDb, authDb } = openAuthDb(options.cacheDir);
+    try {
+      const userManager = new UserManager(authDb);
+      userManager.deleteUser(username);
+      console.log(`User "${username}" deleted.`);
+    } finally {
+      cacheDb.close();
+    }
+  });
+
+auth
+  .command('create-key')
+  .description('Create an API key for a user')
+  .requiredOption('--user <username>', 'Username')
+  .requiredOption('--label <label>', 'Key label')
+  .option('--cache-dir <path>', 'Custom cache directory')
+  .action((options: { user: string; label: string; cacheDir?: string }) => {
+    const { cacheDb, authDb } = openAuthDb(options.cacheDir);
+    try {
+      const userRow = authDb.getUserByUsername(options.user);
+      if (!userRow) {
+        console.error(`User "${options.user}" not found.`);
+        process.exit(1);
+      }
+
+      const apiKeyManager = new ApiKeyManager(authDb);
+      const { rawKey } = apiKeyManager.create({
+        userId: userRow.id,
+        label: options.label,
+      });
+
+      console.log(`\nAPI Key created for "${options.user}":\n`);
+      console.log(`  ${rawKey}`);
+      console.log('\n  Save this key — it cannot be retrieved later.\n');
+    } finally {
+      cacheDb.close();
+    }
+  });
+
+auth
+  .command('list-keys')
+  .description('List API keys')
+  .option('--user <username>', 'Filter by username')
+  .option('--cache-dir <path>', 'Custom cache directory')
+  .action((options: { user?: string; cacheDir?: string }) => {
+    const { cacheDb, authDb } = openAuthDb(options.cacheDir);
+    try {
+      let userId: string | undefined;
+      if (options.user) {
+        const userRow = authDb.getUserByUsername(options.user);
+        if (!userRow) {
+          console.error(`User "${options.user}" not found.`);
+          process.exit(1);
+        }
+        userId = userRow.id;
+      }
+
+      const apiKeyManager = new ApiKeyManager(authDb);
+      const keys = apiKeyManager.list(userId);
+
+      if (keys.length === 0) {
+        console.log('No API keys found.');
+        return;
+      }
+
+      console.log('\nAPI Keys:\n');
+      for (const k of keys) {
+        const status = k.revoked ? 'revoked' : 'active';
+        const lastUsed = k.last_used_at ? new Date(k.last_used_at).toISOString() : 'never';
+        console.log(`  id=${k.id}  user=${k.user_id}  label="${k.label}"  status=${status}  lastUsed=${lastUsed}`);
+      }
+      console.log('');
+    } finally {
+      cacheDb.close();
+    }
+  });
+
+auth
+  .command('revoke-key')
+  .description('Revoke an API key')
+  .argument('<keyId>', 'API key ID to revoke')
+  .option('--cache-dir <path>', 'Custom cache directory')
+  .action((keyId: string, options: { cacheDir?: string }) => {
+    const { cacheDb, authDb } = openAuthDb(options.cacheDir);
+    try {
+      const apiKeyManager = new ApiKeyManager(authDb);
+      apiKeyManager.revoke(keyId);
+      console.log(`API key "${keyId}" revoked.`);
+    } finally {
+      cacheDb.close();
+    }
+  });
+
+auth
+  .command('disable')
+  .description('Disable RBAC (all endpoints become open)')
+  .option('--cache-dir <path>', 'Custom cache directory')
+  .action((options: { cacheDir?: string }) => {
+    const { cacheDb, authDb } = openAuthDb(options.cacheDir);
+    try {
+      authDb.setConfig('enabled', 'false');
+      console.log('Auth disabled. All endpoints are now open.');
+    } finally {
+      cacheDb.close();
     }
   });
 

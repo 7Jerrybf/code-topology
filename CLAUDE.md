@@ -143,7 +143,8 @@ code-topology/
 │   │       ├── graph/     # 拓撲圖構建 & 快照管理
 │   │       ├── git/       # Git 差異分析
 │   │       ├── cache/     # SQLite 緩存 (ParseCache + EmbeddingCache)
-│   │       ├── embedding/ # 本地向量嵌入 (ONNX Runtime + BERT tokenizer)
+│   │       ├── embedding/ # 向量嵌入 (ONNX Runtime + Cloud Vector DB)
+│   │       │   ├── stores/  # VectorStore adapters (sqlite/pinecone/pgvector)
 │   │       ├── conflict/  # 跨分支衝突偵測 (direct/dependency/semantic)
 │   │       ├── reporter/  # 報告生成 (Markdown/JSON)
 │   │       ├── plugins/   # 語言插件系統 + built-in plugins
@@ -175,7 +176,8 @@ code-topology/
 - **本地緩存**: better-sqlite3 (ParseCache + EmbeddingCache)
 - **MCP Server**: @modelcontextprotocol/sdk (stdio transport, 7 tools + 3 resources)
 - **衝突偵測**: isomorphic-git `walk()` + TREE 比較 OID (跨分支語義衝突)
-- **Docker 部署**: multi-stage build, Next.js standalone, docker-compose 編排
+- **Cloud Vector DB**: VectorStore interface + Pinecone/pgvector adapters（動態 import, optional peer deps）
+- **Docker 部署**: multi-stage build, Next.js standalone, docker-compose 編排 + pgvector override
 
 ---
 
@@ -231,8 +233,20 @@ code-topology/
 
 ### Phase 4: The "Governor" (Enterprise/SaaS)
 
-* [ ] 權限管理 (RBAC) 與審計日誌。
-* [ ] Cloud Vector DB 同步。
+* [x] 權限管理 (RBAC) 與審計日誌。
+* [x] **Cloud Vector DB 同步**：向量持久化到雲端，ANN 索引取代暴力搜尋，跨 Repo 語義搜尋。
+  * `VectorStore` interface + Factory pattern（`createVectorStore()`）
+  * 三種 adapter：`SqliteVectorStore`（向後相容）、`PineconeVectorStore`、`PgvectorStore`
+  * Pinecone：動態 import `@pinecone-database/pinecone`，分批 upsert（max 100/batch），namespace 隔離
+  * pgvector：動態 import `pg`，自動建表 + IVFFlat 索引，`<=>` cosine distance 查詢
+  * `resolveVectorConfig()`：合併 CLI flags + 環境變數（`TOPOLOGY_VECTOR_PROVIDER`、`TOPOLOGY_PINECONE_API_KEY` 等）
+  * `syncToCloud()`：Local-First + Write-Through，只同步 cache miss 的新嵌入
+  * `findSemanticEdgesCloud()`：per-file ANN query 取代 O(n²) 暴力搜尋
+  * SQLite schema v3→v4 migration（新增 `vector_sync_state` 表）
+  * CLI 新增 7 個 flags：`--vector-provider`、`--pinecone-api-key`、`--pgvector-url` 等
+  * MCP `find_similar_files` 增強：支援 cloud search + `crossRepo` 跨 Repo 查詢
+  * `docker-compose.pgvector.yml`：pgvector 自託管一行啟動
+  * Optional peer dependencies：未安裝 Pinecone/pg 時完全不影響
 * [ ] Custom Rule Builder (視覺化定義架構規則)。
 
 ---
